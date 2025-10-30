@@ -1,9 +1,12 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
+import * as Path from 'path'
+import * as FSE from 'fs-extra'
 import { shell } from '../../helpers/test-app-shell'
 import {
   setupEmptyRepository,
   setupFixtureRepository,
+  setupRepositoryWithUninitializedSubmodule,
 } from '../../helpers/repositories'
 
 import { Repository } from '../../../src/models/repository'
@@ -166,6 +169,48 @@ describe('git/checkout', () => {
 
       const status = await getStatusOrThrow(repository)
       assert.equal(status.workingDirectory.files.length, 0)
+    })
+
+    it('initializes an uninitialized submodule when checking out a branch', async t => {
+      const repository = await setupRepositoryWithUninitializedSubmodule(t)
+
+      const branches = await getBranches(repository)
+      const branchWithSubmodule = branches.find(b => b.name !== 'master')
+
+      if (branchWithSubmodule == null) {
+        throw new Error(`Could not find branch other than 'master'`)
+      }
+
+      await checkoutBranch(repository, branchWithSubmodule, null)
+
+      // Verify we're on the correct branch
+      const statusOutput = await exec(['status'], repository.path)
+      assert.ok(
+        statusOutput.stdout.includes(`On branch ${branchWithSubmodule.name}`)
+      )
+
+      // Verify the submodule is initialized and has the correct commits
+      const submodulePath = Path.join(repository.path, 'test-submodule')
+      const submoduleGitPath = Path.join(submodulePath, '.git')
+
+      // Check that submodule .git exists (either as file or directory)
+      const submoduleGitExists = await FSE.pathExists(submoduleGitPath)
+      assert.equal(
+        submoduleGitExists,
+        true,
+        'Submodule .git should exist after checkout'
+      )
+
+      // Verify submodule has two commits
+      const submoduleLog = await exec(['log', '--oneline'], submodulePath)
+      assert.equal(submoduleLog.stdout.split('\n').length, 2)
+
+      // Verify submodule is in branch 'master'
+      const submoduleStatus = await exec(['status'], submodulePath)
+      assert.ok(
+        submoduleStatus.stdout.includes('On branch master'),
+        'Submodule should be on branch master after checkout'
+      )
     })
   })
 })
