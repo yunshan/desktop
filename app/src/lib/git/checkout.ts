@@ -5,8 +5,7 @@ import { ICheckoutProgress } from '../../models/progress'
 import {
   CheckoutProgressParser,
   executionOptionsWithProgress,
-  GitProgressParser,
-  IProgressStep,
+  IGitOutput,
 } from '../progress'
 import { AuthenticationErrors } from './authentication'
 import { enableRecurseSubmodulesFlag } from '../feature-flag'
@@ -19,20 +18,9 @@ import { ManualConflictResolution } from '../../models/manual-conflict-resolutio
 import { CommitOneLine, shortenSHA } from '../../models/commit'
 import { IRemote } from '../../models/remote'
 
-/**
- * A progress parser that handles both checkout and submodule update steps.
- */
-class CheckoutWithSubmodulesProgressParser extends GitProgressParser {
-  public constructor() {
-    const steps: ReadonlyArray<IProgressStep> = [
-      { title: 'Checking out files', weight: 0.5 },
-      { title: 'Updating files', weight: 0.5 },
-    ]
-    super(steps)
-  }
-}
-
 export type ProgressCallback = (progress: ICheckoutProgress) => void
+
+const SubmoduleUpdateStepWeight = 0.1
 
 function getCheckoutArgs(progressCallback?: ProgressCallback) {
   return ['checkout', ...(progressCallback ? ['--progress'] : [])]
@@ -141,34 +129,54 @@ async function updateSubmodulesAfterCheckout(
     return
   }
 
+  // Initial progress
+  progressCallback({
+    kind: 'checkout',
+    title,
+    description: 'Updating submodules',
+    value: 0,
+    target,
+  })
+
   const kind = 'checkout'
 
   const progressOpts = await executionOptionsWithProgress(
     { ...opts, trackLFSProgress: true },
-    new CheckoutWithSubmodulesProgressParser(),
+    {
+      parse(line: string): IGitOutput {
+        return {
+          kind: 'context',
+          text: `Updating submodules: ${line}`,
+          percent: 0.5,
+        }
+      },
+    },
     progress => {
-      if (progress.kind === 'progress') {
-        const description = progress.details.text
-        // Scale progress from 50% to 100% (second half of checkout operation)
-        const value = 0.5 + progress.percent * 0.5
+      const description =
+        progress.kind === 'progress' ? progress.details.text : progress.text
 
-        progressCallback({
-          kind,
-          title,
-          description,
-          value,
-          target,
-        })
-      }
+      const value = progress.percent
+
+      progressCallback({
+        kind,
+        title,
+        description,
+        value,
+        target,
+      })
     }
   )
 
-  await git(
-    [...args, '--progress'],
-    repository.path,
-    'updateSubmodules',
-    progressOpts
-  )
+  await git(args, repository.path, 'updateSubmodules', progressOpts)
+
+  // Final progress
+  progressCallback({
+    kind,
+    title,
+    description: 'Submodules updated',
+    value: 1,
+    target,
+  })
 }
 
 /**
@@ -198,7 +206,13 @@ export async function checkoutBranch(
     title,
     branch.name,
     currentRemote,
-    progressCallback,
+    progressCallback
+      ? progress =>
+          progressCallback({
+            ...progress,
+            value: progress.value * (1 - SubmoduleUpdateStepWeight),
+          })
+      : undefined,
     `Switching to ${__DARWIN__ ? 'Branch' : 'branch'}`
   )
 
@@ -213,7 +227,16 @@ export async function checkoutBranch(
     title,
     branch.name,
     currentRemote,
-    progressCallback,
+    progressCallback
+      ? progress =>
+          progressCallback({
+            ...progress,
+            value:
+              1 -
+              SubmoduleUpdateStepWeight +
+              progress.value * SubmoduleUpdateStepWeight,
+          })
+      : undefined,
     allowFileProtocol
   )
 
@@ -252,6 +275,12 @@ export async function checkoutCommit(
     target,
     currentRemote,
     progressCallback
+      ? progress =>
+          progressCallback({
+            ...progress,
+            value: progress.value * (1 - SubmoduleUpdateStepWeight),
+          })
+      : undefined
   )
 
   const baseArgs = getCheckoutArgs(progressCallback)
@@ -265,7 +294,16 @@ export async function checkoutCommit(
     title,
     target,
     currentRemote,
-    progressCallback,
+    progressCallback
+      ? progress =>
+          progressCallback({
+            ...progress,
+            value:
+              1 -
+              SubmoduleUpdateStepWeight +
+              progress.value * SubmoduleUpdateStepWeight,
+          })
+      : undefined,
     allowFileProtocol
   )
 
