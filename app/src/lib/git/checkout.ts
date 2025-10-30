@@ -152,14 +152,28 @@ async function updateSubmodulesAfterCheckout(
 
   const kind = 'checkout'
 
+  let submoduleEventCount = 0
+
   const progressOpts = await executionOptionsWithProgress(
     { ...opts, trackLFSProgress: true },
     {
       parse(line: string): IGitOutput {
+        if (
+          line.match(/^Submodule path (.)+?: checked out /) ||
+          line.startsWith('Cloning into ')
+        ) {
+          submoduleEventCount += 1
+        }
+
         return {
           kind: 'context',
           text: `Updating submodules: ${line}`,
-          percent: 0.5,
+          // Math taken from https://math.stackexchange.com/a/2323106
+          // We do this to fake a progress that slows down as we process more
+          // events, as we don't know how many submodules there are upfront, or
+          // what does git have to do with them (cloning, just checking them
+          // out...)
+          percent: 1 - Math.exp(-submoduleEventCount * 0.25),
         }
       },
     },
