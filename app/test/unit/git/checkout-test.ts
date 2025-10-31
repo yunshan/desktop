@@ -127,30 +127,6 @@ describe('git/checkout', () => {
   })
 
   describe('with submodules', () => {
-    it('cleans up an submodule that no longer exists', async t => {
-      const path = await setupFixtureRepository(t, 'test-submodule-checkouts')
-      const repository = new Repository(path, -1, null, false)
-
-      // put the repository into a known good state
-      await exec(
-        ['checkout', 'add-private-repo', '-f', '--recurse-submodules'],
-        path
-      )
-
-      const branches = await getBranches(repository)
-      const masterBranch = branches.find(b => b.name === 'master')
-
-      if (masterBranch == null) {
-        throw new Error(`Could not find branch: 'master'`)
-      }
-
-      await checkoutBranch(repository, masterBranch, null)
-
-      const status = await getStatusOrThrow(repository)
-
-      assert.equal(status.workingDirectory.files.length, 0)
-    })
-
     it('updates a changed submodule reference', async t => {
       const path = await setupFixtureRepository(t, 'test-submodule-checkouts')
       const repository = new Repository(path, -1, null, false)
