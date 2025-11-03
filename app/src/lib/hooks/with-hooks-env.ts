@@ -163,8 +163,6 @@ export async function withHooksEnv<T>(
           pipe(child.stderr, connection.stderr, 'stderr')
 
           child.on('close', async (code, signal) => {
-            // Ensure all data is flushed to the copilot before exiting
-            // the connection
             await Promise.all([
               waitForWritableFinished(connection.stdout),
               waitForWritableFinished(connection.stderr),
