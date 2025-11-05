@@ -7,6 +7,37 @@ const isExecutable = (path: string) =>
     .then(() => true)
     .catch(() => false)
 
+const knownHooks = [
+  'applypatch-msg',
+  'pre-applypatch',
+  'post-applypatch',
+  'pre-commit',
+  'pre-merge-commit',
+  'prepare-commit-msg',
+  'commit-msg',
+  'post-commit',
+  'pre-rebase',
+  'post-checkout',
+  'post-merge',
+  'pre-push',
+  'pre-receive',
+  'update',
+  'proc-receive',
+  'post-receive',
+  'post-update',
+  'reference-transaction',
+  'push-to-checkout',
+  'pre-auto-gc',
+  'post-rewrite',
+  'sendemail-validate',
+  'fsmonitor-watchman',
+  'p4-changelist',
+  'p4-prepare-changelist',
+  'p4-post-changelist',
+  'p4-pre-submit',
+  'post-index-change',
+]
+
 export async function* getRepoHooks(path: string, filter?: string[]) {
   // TODO: Could we cache this? For just a little while?
   // Probably not because we need to react to changes to core.hooksPath on the
@@ -26,22 +57,33 @@ export async function* getRepoHooks(path: string, filter?: string[]) {
     .catch(() => [])
 
   for (const hook of files) {
-    if (filter && !filter.includes(hook.name)) {
+    const hookName = hook.name.endsWith('.exe')
+      ? hook.name.slice(0, -4)
+      : hook.name
+
+    if (filter && !filter.includes(hookName)) {
+      continue
+    }
+
+    if (!knownHooks.includes(hookName)) {
+      continue
+    }
+
+    if (hookName.endsWith('.sample')) {
       continue
     }
 
     const hookPath = join(hook.parentPath, hook.name)
 
     if (__WIN32__) {
-      if (hook.name.endsWith('.exe')) {
-        continue
-      }
+      // On Windows we have to assume that any valid hook name is executable
+      // because the executable bit is not used there. Git looks for a shebang
+      // but that seems expensive to check here :shrug:
+      yield hookPath
     } else {
-      if (!(await isExecutable(hookPath))) {
-        continue
+      if (await isExecutable(hookPath)) {
+        yield hookPath
       }
     }
-
-    yield hookPath
   }
 }
