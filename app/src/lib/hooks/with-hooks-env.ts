@@ -34,15 +34,18 @@ export async function withHooksEnv<T>(
   const processProxyPath = join(__dirname, `process-proxy${ext}`)
 
   const token = crypto.randomUUID()
-  const server = createProxyProcessServer(createHooksProxy(repoHooks), {
-    validateConnection: async receivedToken => receivedToken === token,
-  })
+  const tmpHooksDir = await mkdtemp(join(tmpdir(), 'desktop-git-hooks-'))
+  const hooksProxy = createHooksProxy(repoHooks, tmpHooksDir)
+
+  const server = createProxyProcessServer(
+    conn => hooksProxy(conn).catch(e => conn.exit(1).catch(() => {})),
+    { validateConnection: async receivedToken => receivedToken === token }
+  )
   const port = await new Promise<number>((resolve, reject) => {
     server.listen(0, '127.0.0.1', () => {
       resolve((server.address() as AddressInfo).port)
     })
   })
-  const tmpHooksDir = await mkdtemp(join(tmpdir(), 'desktop-git-hooks-'))
   try {
     for (const hook of repoHooks) {
       const cleanHooksName = __WIN32__

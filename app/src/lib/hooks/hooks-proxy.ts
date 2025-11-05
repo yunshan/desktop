@@ -1,9 +1,14 @@
 import { spawn } from 'child_process'
+import { randomBytes } from 'crypto'
+import { createWriteStream } from 'fs'
 import memoizeOne from 'memoize-one'
-import { basename } from 'path'
+import { basename, join } from 'path'
 import { ProcessProxyConnection } from 'process-proxy'
 import { Shescape } from 'shescape'
-import { Readable, Writable } from 'stream'
+import { Writable } from 'stream'
+import { pipeline } from 'stream/promises'
+
+const hooksUsingStdin = ['post-rewrite']
 
 const debug = (message: string, error?: Error) => {
   log.debug(`hooks: ${message}`, error)
@@ -71,9 +76,8 @@ const exitWithError = (
   })
 }
 
-export const createHooksProxy = (repoHooks: string[]) => {
+export const createHooksProxy = (repoHooks: string[], tmpDir: string) => {
   return async (connection: ProcessProxyConnection) => {
-    const abortController = new AbortController()
     const proxyArgs = await connection.getArgs()
     const proxyEnv = await connection.getEnv()
     const proxyCwd = await connection.getCwd()
@@ -96,7 +100,7 @@ export const createHooksProxy = (repoHooks: string[]) => {
 
     const safeEnv = Object.fromEntries(
       Object.entries(proxyEnv).filter(
-        ([k]) => k.startsWith('GIT_') && excludedEnvVars.has(k)
+        ([k]) => k.startsWith('GIT_') && !excludedEnvVars.has(k)
       )
     )
 
@@ -115,45 +119,69 @@ export const createHooksProxy = (repoHooks: string[]) => {
       return
     }
 
+    // We don't have to clean this up since it's in the tmpdir created by the
+    // hooks env.
+    const stdinFilePath = join(
+      tmpDir,
+      `${hookName}-stdin-${randomBytes(8).toString('hex')}`
+    )
+
+    const hasStdin = hooksUsingStdin.includes(hookName)
+
+    if (hasStdin) {
+      await pipeline(
+        connection.stdin,
+        createWriteStream(stdinFilePath, { mode: 0o600 })
+      )
+    }
+
     const { shell, args: shellArgs, quote } = getShell()
 
-    const cmdArgs = [hooksExecutable, ...proxyArgs.slice(1)]
+    const cmdArgs = [
+      'git',
+      'hook',
+      'run',
+      hookName,
+      ...(hasStdin ? ['--to-stdin', stdinFilePath] : []),
+      '--',
+      ...proxyArgs.slice(1),
+    ]
     const cmd = cmdArgs.map(quote).join(' ')
 
-    const child = spawn(shell, [...shellArgs, cmd], {
-      cwd: proxyCwd,
-      env: safeEnv,
-      signal: abortController.signal,
-    })
-      .on('spawn', () => {
-        const pipe = (from: Readable, to: Writable, name: string) => {
-          from.pipe(to).on('error', err => {
-            debug(`${name} pipe error:`, err)
-            abortController.abort()
-          })
-        }
+    const { code } = await new Promise<{
+      code: number | null
+      signal: NodeJS.Signals | null
+    }>((resolve, reject) => {
+      const abortController = new AbortController()
+      connection.on('close', () => abortController.abort())
 
-        pipe(connection.stdin, child.stdin, 'stdin')
-        pipe(child.stdout, connection.stdout, 'stdout')
-        pipe(child.stderr, connection.stderr, 'stderr')
-
-        child.on('close', async (code, signal) => {
-          await Promise.all([
-            waitForWritableFinished(connection.stdout),
-            waitForWritableFinished(connection.stderr),
-          ])
-
-          if (code !== 0) {
-            debug(`exiting proxy with code ${code}`)
-          }
-          await connection.exit(code ?? 0).catch(err => {
-            debug(`failed to exit proxy:`, err)
-          })
+      const child = spawn(shell, [...shellArgs, cmd], {
+        cwd: proxyCwd,
+        env: safeEnv,
+        signal: abortController.signal,
+      })
+        .on('spawn', () => {
+          // TODO: Do hooks ever write to stdout? Probably not?
+          // https://github.com/git/git/blob/4cf919bd7b946477798af5414a371b23fd68bf93/hook.c#L73C6-L73C22
+          child.stdout.pipe(connection.stdout).on('error', reject)
+          child.stderr.pipe(connection.stderr).on('error', reject)
+          child.on('close', (code, signal) => resolve({ code, signal }))
         })
-      })
-      .on('error', async err => {
-        debug(`child error:`, err)
-        await exitWithError(connection, `Error: command failed: ${err.message}`)
-      })
+        .on('error', reject)
+    })
+
+    await Promise.all([
+      waitForWritableFinished(connection.stdout),
+      waitForWritableFinished(connection.stderr),
+    ]).catch(e => {
+      debug(`waiting for writable to finish failed`, e)
+    })
+
+    if (code !== 0) {
+      debug(`exiting proxy with code ${code}`)
+    }
+    await connection
+      .exit(code ?? 0)
+      .catch(err => debug(`failed to exit proxy:`, err))
   }
 }
