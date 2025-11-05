@@ -1,11 +1,12 @@
-import { tmpdir } from 'os'
-import { enableHooksEnvironment } from '../feature-flag'
-import { getRepoHooks } from './get-repo-hooks'
 import { cp, mkdtemp, rm } from 'fs/promises'
-import { join, basename } from 'path'
-import { createProxyProcessServer } from 'process-proxy'
 import { AddressInfo } from 'net'
+import { tmpdir } from 'os'
+import { basename, join } from 'path'
+import { createProxyProcessServer } from 'process-proxy'
+import which from 'which'
+import { enableHooksEnvironment } from '../feature-flag'
 import type { IGitExecutionOptions } from '../git/core'
+import { getRepoHooks } from './get-repo-hooks'
 import { createHooksProxy } from './hooks-proxy'
 
 export async function withHooksEnv<T>(
@@ -30,15 +31,22 @@ export async function withHooksEnv<T>(
     return fn(options?.env)
   }
 
+  const gitPath = await which('git', { nothrow: true })
+
+  if (gitPath === null) {
+    log.info(`Git executable not found in PATH, skipping hook interception.`)
+    return fn(options?.env)
+  }
+
   const ext = __WIN32__ ? '.exe' : ''
   const processProxyPath = join(__dirname, `process-proxy${ext}`)
 
   const token = crypto.randomUUID()
   const tmpHooksDir = await mkdtemp(join(tmpdir(), 'desktop-git-hooks-'))
-  const hooksProxy = createHooksProxy(repoHooks, tmpHooksDir)
+  const hooksProxy = createHooksProxy(repoHooks, tmpHooksDir, gitPath)
 
   const server = createProxyProcessServer(
-    conn => hooksProxy(conn).catch(e => conn.exit(1).catch(() => {})),
+    conn => hooksProxy(conn).catch(() => conn.exit(1).catch(() => {})),
     { validateConnection: async receivedToken => receivedToken === token }
   )
   const port = await new Promise<number>((resolve, reject) => {
@@ -71,6 +79,7 @@ export async function withHooksEnv<T>(
       PROCESS_PROXY_TOKEN: token,
     })
   } finally {
+    server.close()
     // Clean up the temporary directory
     await rm(tmpHooksDir, { recursive: true, force: true }).catch(() => {
       // Ignore errors

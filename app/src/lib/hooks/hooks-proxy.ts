@@ -7,6 +7,7 @@ import { ProcessProxyConnection } from 'process-proxy'
 import { Shescape } from 'shescape'
 import { Writable } from 'stream'
 import { pipeline } from 'stream/promises'
+import { execFile } from '../exec-file'
 
 const hooksUsingStdin = ['post-rewrite']
 
@@ -76,7 +77,35 @@ const exitWithError = (
   })
 }
 
-export const createHooksProxy = (repoHooks: string[], tmpDir: string) => {
+const getCleanShellEnv = async (): Promise<Record<string, string>> => {
+  const ext = __WIN32__ ? '.exe' : ''
+  const printenvzPath = join(__dirname, `printenvz${ext}`)
+
+  const { shell, args, quote } = getShell()
+  const { stdout } = await execFile(shell, [...args, quote(printenvzPath)], {
+    env: {},
+  })
+
+  return Object.fromEntries(
+    stdout.split('\0').map(line => {
+      const eqIndex = line.indexOf('=')
+      if (eqIndex === -1) {
+        throw new Error(`Invalid env var line: ${line}`)
+      }
+      const key = line.substring(0, eqIndex)
+      const value = line.substring(eqIndex + 1)
+      return [key, value]
+    })
+  )
+}
+
+export const createHooksProxy = (
+  repoHooks: string[],
+  tmpDir: string,
+  gitPath: string
+) => {
+  const cleanShellEnv = memoizeOne(getCleanShellEnv)
+
   return async (connection: ProcessProxyConnection) => {
     const startTime = Date.now()
     const proxyArgs = await connection.getArgs()
@@ -129,10 +158,7 @@ export const createHooksProxy = (repoHooks: string[], tmpDir: string) => {
       await pipeline(connection.stdin, createWriteStream(stdinFilePath))
     }
 
-    const { shell, args: shellArgs, quote } = getShell()
-
-    const cmdArgs = [
-      'git',
+    const args = [
       'hook',
       'run',
       hookName,
@@ -140,7 +166,7 @@ export const createHooksProxy = (repoHooks: string[], tmpDir: string) => {
       '--',
       ...proxyArgs.slice(1),
     ]
-    const cmd = cmdArgs.map(quote).join(' ')
+    const shellEnv = await cleanShellEnv()
 
     const { code } = await new Promise<{
       code: number | null
@@ -149,15 +175,15 @@ export const createHooksProxy = (repoHooks: string[], tmpDir: string) => {
       const abortController = new AbortController()
       connection.on('close', () => abortController.abort())
 
-      const child = spawn(shell, [...shellArgs, cmd], {
+      const child = spawn(gitPath, args, {
         cwd: proxyCwd,
-        env: safeEnv,
+        env: { ...shellEnv, ...safeEnv },
         signal: abortController.signal,
       })
-        .on('error', reject)
         .on('close', (code, signal) => resolve({ code, signal }))
+        .on('error', reject)
 
-      // Git hooks only write to stderr
+      // hooks never write to stdout
       // https://github.com/git/git/blob/4cf919bd7b946477798af5414a371b23fd68bf93/hook.c#L73C6-L73C22
       child.stderr.pipe(connection.stderr).on('error', reject)
     })
