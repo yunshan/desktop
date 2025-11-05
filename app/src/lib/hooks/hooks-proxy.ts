@@ -88,9 +88,10 @@ export const createHooksProxy = (repoHooks: string[], tmpDir: string) => {
       : basename(proxyArgs[0])
 
     const excludedEnvVars = new Set([
-      // Dugite sets this to point to a custom git config file which
-      // we don't want to leak into the hook's environment
+      // Dugite sets these, we don't want to leak them into the hook environment
       'GIT_SYSTEM_CONFIG',
+      'GIT_EXEC_PATH',
+      'GIT_TEMPLATE_DIR',
       // We set this to point to a custom hooks path which we don't want
       // leaking into the hook's environment. Initially I thought we would have
       // to sanitize this to strip out the custom config we set and leave any
