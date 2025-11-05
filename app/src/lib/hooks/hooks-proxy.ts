@@ -121,8 +121,7 @@ export const createHooksProxy = (repoHooks: string[], tmpDir: string) => {
       return
     }
 
-    // We don't have to clean this up since it's in the tmpdir created by the
-    // hooks env.
+    // tmpdir is deleted when the Git call completes, so we can leave the file
     const stdinFilePath = join(tmpDir, `in-${randomBytes(8).toString('hex')}`)
     const hasStdin = hooksUsingStdin.includes(hookName)
 
