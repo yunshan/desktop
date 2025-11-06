@@ -37,6 +37,12 @@ export const isMaxBufferExceededError = (
   )
 }
 
+export type TerminalOutputListener = (cb: (chunk: Buffer | string) => void) => {
+  unsubscribe: () => void
+}
+
+export type TerminalOutputCallback = (subscribe: TerminalOutputListener) => void
+
 export type HookProgress =
   | {
       readonly hookName: string
@@ -81,6 +87,8 @@ export interface IGitExecutionOptions extends DugiteExecutionOptions {
   readonly interceptHooks?: boolean | string[]
   readonly onHookProgress?: (progress: HookProgress) => void
   readonly onHookFailure?: (hookName: string) => Promise<'abort' | 'ignore'>
+
+  readonly onTerminalOutputAvailable?: TerminalOutputCallback
 }
 
 /**
@@ -242,6 +250,20 @@ export async function git(
   // Keep at most 256kb of combined stderr and stdout output. This is used
   // to provide more context in error messages.
   opts.processCallback = process => {
+    if (options?.onTerminalOutputAvailable) {
+      options.onTerminalOutputAvailable(function (cb) {
+        process.stdout?.on('data', cb)
+        process.stderr?.on('data', cb)
+
+        return {
+          unsubscribe: () => {
+            process.stdout?.off('data', cb)
+            process.stderr?.off('data', cb)
+          },
+        }
+      })
+    }
+
     const terminalStream = createTerminalStream()
     const tailStream = createTailStream(256 * 1024, { encoding: 'utf8' })
 

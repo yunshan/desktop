@@ -199,6 +199,7 @@ import {
   BypassReasonType,
 } from './secret-scanning/bypass-push-protection-dialog'
 import { HookFailed } from './hook-failed/hook-failed'
+import { CommitProgress } from './commit-progress/commit-progress'
 
 const MinuteInMilliseconds = 1000 * 60
 const HourInMilliseconds = MinuteInMilliseconds * 60
@@ -2582,6 +2583,15 @@ export class App extends React.Component<IAppProps, IAppState> {
             key="hook-failure-dialog"
             hookName={popup.hookName}
             resolve={popup.resolve}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
+      case PopupType.CommitProgress: {
+        return (
+          <CommitProgress
+            key="commit-progress-dialog"
+            subscribeToCommitOutput={popup.subscribeToCommitOutput}
             onDismissed={onPopupDismissedFn}
           />
         )

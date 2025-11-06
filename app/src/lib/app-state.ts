@@ -44,7 +44,11 @@ import {
   MultiCommitOperationDetail,
   MultiCommitOperationStep,
 } from '../models/multi-commit-operation'
-import type { HookProgress, IChangesetData } from './git'
+import type {
+  HookProgress,
+  IChangesetData,
+  TerminalOutputListener,
+} from './git'
 import { Popup } from '../models/popup'
 import { RepoRulesInfo } from '../models/repo-rules'
 import { IAPIRepoRuleset } from './api'
@@ -550,6 +554,7 @@ export interface IRepositoryState {
   readonly lastFetched: Date | null
 
   readonly hookProgress: HookProgress | null
+  readonly subscribeToCommitOutput: TerminalOutputListener | null
 
   /**
    * If we're currently working on switching to a new branch this

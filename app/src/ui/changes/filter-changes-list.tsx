@@ -159,6 +159,7 @@ interface IFilterChangesListProps {
   readonly availableWidth: number
   readonly isCommitting: boolean
   readonly hookProgress: HookProgress | null
+  readonly onShowCommitProgress?: () => void
   readonly isGeneratingCommitMessage: boolean
   readonly shouldShowGenerateCommitMessageCallOut: boolean
   readonly commitToAmend: Commit | null
@@ -945,6 +946,7 @@ export class FilterChangesList extends React.Component<
         autocompletionProviders={this.props.autocompletionProviders}
         isCommitting={isCommitting}
         hookProgress={hookProgress}
+        onShowCommitProgress={this.props.onShowCommitProgress}
         isGeneratingCommitMessage={isGeneratingCommitMessage}
         shouldShowGenerateCommitMessageCallOut={
           shouldShowGenerateCommitMessageCallOut

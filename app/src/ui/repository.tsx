@@ -34,6 +34,7 @@ import { DragType } from '../models/drag-drop'
 import { PullRequestSuggestedNextAction } from '../models/pull-request'
 import { clamp } from '../lib/clamp'
 import { Emoji } from '../lib/emoji'
+import { PopupType } from '../models/popup'
 
 interface IRepositoryViewProps {
   readonly repository: Repository
@@ -206,6 +207,17 @@ export class RepositoryView extends React.Component<
     )
   }
 
+  private onShowCommitProgress = () => {
+    if (!this.props.state.subscribeToCommitOutput) {
+      return
+    }
+
+    this.props.dispatcher.showPopup({
+      type: PopupType.CommitProgress,
+      subscribeToCommitOutput: this.props.state.subscribeToCommitOutput,
+    })
+  }
+
   private renderChangesSidebar(): JSX.Element {
     const tip = this.props.state.branchesState.tip
 
@@ -250,6 +262,11 @@ export class RepositoryView extends React.Component<
         gitHubUserStore={this.props.gitHubUserStore}
         isCommitting={this.props.state.isCommitting}
         hookProgress={this.props.state.hookProgress}
+        onShowCommitProgress={
+          this.props.state.subscribeToCommitOutput
+            ? this.onShowCommitProgress
+            : undefined
+        }
         isGeneratingCommitMessage={this.props.state.isGeneratingCommitMessage}
         shouldShowGenerateCommitMessageCallOut={
           this.props.shouldShowGenerateCommitMessageCallOut

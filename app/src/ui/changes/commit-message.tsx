@@ -110,6 +110,7 @@ interface ICommitMessageProps {
   readonly autocompletionProviders: ReadonlyArray<IAutocompletionProvider<any>>
   readonly isCommitting?: boolean
   readonly hookProgress: HookProgress | null
+  readonly onShowCommitProgress: (() => void) | undefined
   readonly isGeneratingCommitMessage?: boolean
   readonly shouldShowGenerateCommitMessageCallOut?: boolean
   readonly commitToAmend: Commit | null
@@ -1579,9 +1580,14 @@ export class CommitMessage extends React.Component<
     return (
       <div className="commit-progress">
         <div className="description">{text}</div>
-        <Button tooltip="Show commit progress">
-          <Octicon symbol={octicons.terminal} />
-        </Button>
+        {this.props.onShowCommitProgress && (
+          <Button
+            tooltip="Show commit progress"
+            onClick={this.props.onShowCommitProgress}
+          >
+            <Octicon symbol={octicons.terminal} />
+          </Button>
+        )}
       </div>
     )
   }

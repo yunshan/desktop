@@ -1,4 +1,9 @@
-import { git, HookProgress, parseCommitSHA } from './core'
+import {
+  git,
+  HookProgress,
+  parseCommitSHA,
+  TerminalOutputCallback,
+} from './core'
 import { stageFiles } from './update-index'
 import { Repository } from '../../models/repository'
 import { WorkingDirectoryFileChange } from '../../models/status'
@@ -16,9 +21,12 @@ export async function createCommit(
   repository: Repository,
   message: string,
   files: ReadonlyArray<WorkingDirectoryFileChange>,
-  amend: boolean = false,
-  onHookProgress?: (progress: HookProgress) => void,
-  onHookFailure?: (hookName: string) => Promise<'abort' | 'ignore'>
+  options?: {
+    amend?: boolean
+    onHookProgress?: (progress: HookProgress) => void
+    onHookFailure?: (hookName: string) => Promise<'abort' | 'ignore'>
+    onTerminalOutputAvailable?: TerminalOutputCallback
+  }
 ): Promise<string> {
   // Clear the staging area, our diffs reflect the difference between the
   // working directory and the last commit (if any) so our commits should
@@ -29,7 +37,7 @@ export async function createCommit(
 
   const args = ['-F', '-']
 
-  if (amend) {
+  if (options?.amend) {
     args.push('--amend')
   }
 
@@ -48,8 +56,9 @@ export async function createCommit(
         'post-rewrite',
         'pre-auto-gc',
       ],
-      onHookProgress,
-      onHookFailure,
+      onHookProgress: options?.onHookProgress,
+      onHookFailure: options?.onHookFailure,
+      onTerminalOutputAvailable: options?.onTerminalOutputAvailable,
     }
   )
   return parseCommitSHA(result)

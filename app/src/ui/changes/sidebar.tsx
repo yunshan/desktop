@@ -58,6 +58,7 @@ interface IChangesSidebarProps {
   readonly availableWidth: number
   readonly isCommitting: boolean
   readonly hookProgress: HookProgress | null
+  readonly onShowCommitProgress: (() => void) | undefined
   readonly isGeneratingCommitMessage: boolean
   readonly shouldShowGenerateCommitMessageCallOut: boolean
   readonly commitToAmend: Commit | null
@@ -442,6 +443,7 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
           onIgnorePattern={this.onIgnorePattern}
           isCommitting={this.props.isCommitting}
           hookProgress={this.props.hookProgress}
+          onShowCommitProgress={this.props.onShowCommitProgress}
           isGeneratingCommitMessage={this.props.isGeneratingCommitMessage}
           shouldShowGenerateCommitMessageCallOut={
             this.props.shouldShowGenerateCommitMessageCallOut

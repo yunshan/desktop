@@ -166,6 +166,7 @@ export class CommitMessageDialog extends React.Component<
             accounts={this.props.accounts}
             isCommitting={false}
             hookProgress={null}
+            onShowCommitProgress={undefined}
           />
         </DialogContent>
       </Dialog>

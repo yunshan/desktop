@@ -3309,23 +3309,26 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return this.withIsCommitting(repository, async () => {
       const result = await gitStore.performFailableOperation(async () => {
         const message = await formatCommitMessage(repository, context)
-        return createCommit(
-          repository,
-          message,
-          selectedFiles,
-          context.amend,
-          hookProgress => {
+        return createCommit(repository, message, selectedFiles, {
+          amend: context.amend,
+          onHookProgress: hookProgress => {
             this.repositoryStateCache.update(repository, state => ({
               ...state,
               hookProgress,
             }))
             this.emitUpdate()
           },
-          hookName =>
+          onHookFailure: hookName =>
             new Promise(resolve => {
               this._showPopup({ type: PopupType.HookFailed, hookName, resolve })
-            })
-        )
+            }),
+          onTerminalOutputAvailable: subscribeToCommitOutput => {
+            this.repositoryStateCache.update(repository, state => ({
+              ...state,
+              subscribeToCommitOutput,
+            }))
+          },
+        })
       })
 
       if (result !== undefined) {
@@ -4779,6 +4782,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.repositoryStateCache.update(repository, () => ({
       isCommitting: true,
       hookProgress: null,
+      subscribeToCommitOutput: null,
     }))
     this.emitUpdate()
 
@@ -4788,6 +4792,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       this.repositoryStateCache.update(repository, () => ({
         isCommitting: false,
         hookProgress: null,
+        subscribeToCommitOutput: null,
       }))
       this.emitUpdate()
     }
