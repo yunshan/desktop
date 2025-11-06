@@ -68,6 +68,8 @@ export const createHooksProxy = (
 
     const abortController = new AbortController()
 
+    conn.stderr.write(`Running ${hookName} hook...\n`)
+
     onHookProgress?.({
       hookName,
       status: 'started',
