@@ -13,14 +13,46 @@
   padding: var(--spacing);
 
   .commit-progress {
-    color: var(--text-secondary-color);
+    // color: var(--text-secondary-color);
 
     display: flex;
     align-items: center;
     margin-top: var(--spacing-half);
-    svg.octicon {
+
+    .description {
+      flex-grow: 1;
+      @include ellipsis;
+      padding: var(--spacing-half) var(--spacing);
+
+      border: var(--base-border);
+      border-radius: var(--button-border-radius);
+      border-color: var(--secondary-button-border-color);
+      border-right: 0;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    button {
+      flex-shrink: 0;
+      padding: var(--spacing-third);
+      height: 100%;
+      border-left-width: 1px;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      padding: 0 var(--spacing-half);
+      > svg.octicon {
+        height: 12px;
+      }
+
+      &:hover {
+        background-color: var(--secondary-button-hover-background);
+      }
+    }
+
+    > svg.octicon {
       margin-right: 3px;
       height: 12px;
+      flex-shrink: 0;
     }
   }
 

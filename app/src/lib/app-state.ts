@@ -549,8 +549,6 @@ export interface IRepositoryState {
   /** The date the repository was last fetched. */
   readonly lastFetched: Date | null
 
-  readonly isRunningGitGC: boolean
-
   readonly hookProgress: HookProgress | null
 
   /**

@@ -3317,10 +3317,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
           hookProgress => {
             this.repositoryStateCache.update(repository, state => ({
               ...state,
-              ...(hookProgress?.hookName === 'pre-auto-gc' &&
-              hookProgress?.status === 'finished'
-                ? { isRunningGitGC: true }
-                : undefined),
               hookProgress,
             }))
             this.emitUpdate()
@@ -4779,7 +4775,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.repositoryStateCache.update(repository, () => ({
       isCommitting: true,
       hookProgress: null,
-      isRunningGitGC: false,
     }))
     this.emitUpdate()
 
@@ -4789,7 +4784,6 @@ export class AppStore extends TypedBaseStore<IAppState> {
       this.repositoryStateCache.update(repository, () => ({
         isCommitting: false,
         hookProgress: null,
-        isRunningGitGC: false,
       }))
       this.emitUpdate()
     }

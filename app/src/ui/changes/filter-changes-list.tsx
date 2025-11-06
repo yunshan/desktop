@@ -158,7 +158,6 @@ interface IFilterChangesListProps {
   readonly dispatcher: Dispatcher
   readonly availableWidth: number
   readonly isCommitting: boolean
-  readonly isRunningGitGC: boolean
   readonly hookProgress: HookProgress | null
   readonly isGeneratingCommitMessage: boolean
   readonly shouldShowGenerateCommitMessageCallOut: boolean
@@ -868,7 +867,6 @@ export class FilterChangesList extends React.Component<
       repositoryAccount,
       dispatcher,
       isCommitting,
-      isRunningGitGC,
       hookProgress,
       isGeneratingCommitMessage,
       commitToAmend,
@@ -946,7 +944,6 @@ export class FilterChangesList extends React.Component<
         focusCommitMessage={this.props.focusCommitMessage}
         autocompletionProviders={this.props.autocompletionProviders}
         isCommitting={isCommitting}
-        isRunningGitGC={isRunningGitGC}
         hookProgress={hookProgress}
         isGeneratingCommitMessage={isGeneratingCommitMessage}
         shouldShowGenerateCommitMessageCallOut={

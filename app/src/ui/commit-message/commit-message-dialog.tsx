@@ -165,7 +165,6 @@ export class CommitMessageDialog extends React.Component<
             onShowCreateForkDialog={this.onShowCreateForkDialog}
             accounts={this.props.accounts}
             isCommitting={false}
-            isRunningGitGC={false}
             hookProgress={null}
           />
         </DialogContent>

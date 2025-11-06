@@ -109,7 +109,6 @@ interface ICommitMessageProps {
   readonly repositoryAccount: Account | null
   readonly autocompletionProviders: ReadonlyArray<IAutocompletionProvider<any>>
   readonly isCommitting?: boolean
-  readonly isRunningGitGC: boolean
   readonly hookProgress: HookProgress | null
   readonly isGeneratingCommitMessage?: boolean
   readonly shouldShowGenerateCommitMessageCallOut?: boolean
@@ -1551,43 +1550,25 @@ export class CommitMessage extends React.Component<
   }
 
   private renderCommitProgress() {
-    const { isCommitting, isRunningGitGC, hookProgress } = this.props
-    if (!isCommitting) {
+    const { isCommitting, hookProgress } = this.props
+    if (!isCommitting || !hookProgress) {
+      return null
       // return (
-      //   <div className="commit-progress finished">
-      //     <Octicon symbol={octicons.terminal} />
-      //     <span>pre-commit hook finished</span>
+      //   <div className="commit-progress">
+      //     <div className="description">Optimizing repository...</div>
+      //     <Button>
+      //       <Octicon symbol={octicons.terminal} />
+      //     </Button>
       //   </div>
       // )
-      return null
-    }
-
-    if (isRunningGitGC) {
-      return (
-        <div className="commit-progress">
-          <Loading />
-          <span>Optimizing repository…</span>
-        </div>
-      )
-    }
-
-    if (!hookProgress) {
-      return null
     }
 
     const { status, hookName } = hookProgress
 
-    // const icon =
-    //   status === 'started' ? (
-    //     <Octicon symbol={octicons.clockFill} />
-    //   ) : status === 'finished' ? (
-    //     <Octicon symbol={octicons.checkCircleFill} height={12} />
-    //   ) : status === 'failed' ? (
-    //     <Octicon symbol={octicons.xCircleFill} height={12} />
-    //   ) : null
-
     const text =
-      status === 'started'
+      hookName === 'pre-auto-gc' && status === 'finished'
+        ? 'Optimizing repository…'
+        : status === 'started'
         ? `${hookName} hook running…`
         : status === 'finished'
         ? `${hookName} hook finished`
@@ -1597,8 +1578,10 @@ export class CommitMessage extends React.Component<
 
     return (
       <div className="commit-progress">
-        <Octicon symbol={octicons.terminal} />
-        <span>{text}</span>
+        <div className="description">{text}</div>
+        <Button tooltip="Show commit progress">
+          <Octicon symbol={octicons.terminal} />
+        </Button>
       </div>
     )
   }
