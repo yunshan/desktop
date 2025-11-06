@@ -39,9 +39,6 @@ const knownHooks = [
 ]
 
 export async function* getRepoHooks(path: string, filter?: string[]) {
-  // TODO: Could we cache this? For just a little while?
-  // Probably not because we need to react to changes to core.hooksPath on the
-  // fly but it sure would be nice.
   const { exitCode, stdout } = await exec(
     ['config', '-z', '--get', 'core.hooksPath'],
     path
