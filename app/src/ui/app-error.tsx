@@ -164,6 +164,8 @@ export class AppError extends React.Component<IAppErrorProps, IAppErrorState> {
       switch (gitContext?.kind) {
         case 'create-repository':
           return `Failed creating repository`
+        case 'commit':
+          return `Commit failed`
       }
     }
 

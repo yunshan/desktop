@@ -3307,40 +3307,43 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const gitStore = this.gitStoreCache.get(repository)
 
     return this.withIsCommitting(repository, async () => {
-      const result = await gitStore.performFailableOperation(async () => {
-        const message = await formatCommitMessage(repository, context)
-        let aborted = false
-        return createCommit(repository, message, selectedFiles, {
-          amend: context.amend,
-          onHookProgress: hookProgress => {
-            this.repositoryStateCache.update(repository, state => ({
-              ...state,
-              hookProgress,
-            }))
-            this.emitUpdate()
-          },
-          onHookFailure: (hookName, terminalOutput) =>
-            new Promise(resolve => {
-              this._showPopup({
-                type: PopupType.HookFailed,
-                hookName,
-                terminalOutput,
-                resolve: resolution => {
-                  if (resolution === 'abort') {
-                    aborted = true
-                  }
-                  resolve(resolution)
-                },
-              })
-            }),
-          onTerminalOutputAvailable: subscribeToCommitOutput => {
-            this.repositoryStateCache.update(repository, state => ({
-              ...state,
-              subscribeToCommitOutput,
-            }))
-          },
-        }).catch(err => (aborted ? undefined : Promise.reject(err)))
-      })
+      const result = await gitStore.performFailableOperation(
+        async () => {
+          const message = await formatCommitMessage(repository, context)
+          let aborted = false
+          return createCommit(repository, message, selectedFiles, {
+            amend: context.amend,
+            onHookProgress: hookProgress => {
+              this.repositoryStateCache.update(repository, state => ({
+                ...state,
+                hookProgress,
+              }))
+              this.emitUpdate()
+            },
+            onHookFailure: (hookName, terminalOutput) =>
+              new Promise(resolve => {
+                this._showPopup({
+                  type: PopupType.HookFailed,
+                  hookName,
+                  terminalOutput,
+                  resolve: resolution => {
+                    if (resolution === 'abort') {
+                      aborted = true
+                    }
+                    resolve(resolution)
+                  },
+                })
+              }),
+            onTerminalOutputAvailable: subscribeToCommitOutput => {
+              this.repositoryStateCache.update(repository, state => ({
+                ...state,
+                subscribeToCommitOutput,
+              }))
+            },
+          }).catch(err => (aborted ? undefined : Promise.reject(err)))
+        },
+        { gitContext: { kind: 'commit' }, repository }
+      )
 
       if (result !== undefined) {
         await this._recordCommitStats(
