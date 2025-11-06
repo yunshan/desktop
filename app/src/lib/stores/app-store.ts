@@ -3309,7 +3309,23 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return this.withIsCommitting(repository, async () => {
       const result = await gitStore.performFailableOperation(async () => {
         const message = await formatCommitMessage(repository, context)
-        return createCommit(repository, message, selectedFiles, context.amend)
+        return createCommit(
+          repository,
+          message,
+          selectedFiles,
+          context.amend,
+          hookProgress => {
+            this.repositoryStateCache.update(repository, state => ({
+              ...state,
+              ...(hookProgress?.hookName === 'pre-auto-gc' &&
+              hookProgress?.status === 'finished'
+                ? { isRunningGitGC: true }
+                : undefined),
+              hookProgress,
+            }))
+            this.emitUpdate()
+          }
+        )
       })
 
       if (result !== undefined) {
@@ -4762,6 +4778,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     this.repositoryStateCache.update(repository, () => ({
       isCommitting: true,
+      hookProgress: null,
+      isRunningGitGC: false,
     }))
     this.emitUpdate()
 
@@ -4770,6 +4788,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     } finally {
       this.repositoryStateCache.update(repository, () => ({
         isCommitting: false,
+        hookProgress: null,
+        isRunningGitGC: false,
       }))
       this.emitUpdate()
     }

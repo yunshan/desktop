@@ -44,7 +44,7 @@ import {
   MultiCommitOperationDetail,
   MultiCommitOperationStep,
 } from '../models/multi-commit-operation'
-import { IChangesetData } from './git'
+import type { HookProgress, IChangesetData } from './git'
 import { Popup } from '../models/popup'
 import { RepoRulesInfo } from '../models/repo-rules'
 import { IAPIRepoRuleset } from './api'
@@ -548,6 +548,10 @@ export interface IRepositoryState {
 
   /** The date the repository was last fetched. */
   readonly lastFetched: Date | null
+
+  readonly isRunningGitGC: boolean
+
+  readonly hookProgress: HookProgress | null
 
   /**
    * If we're currently working on switching to a new branch this

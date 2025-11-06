@@ -48,7 +48,13 @@ export async function withHooksEnv<T>(
 
   const token = crypto.randomUUID()
   const tmpHooksDir = await mkdtemp(join(tmpdir(), 'desktop-git-hooks-'))
-  const hooksProxy = createHooksProxy(repoHooks, tmpHooksDir, gitPath, shellEnv)
+  const hooksProxy = createHooksProxy(
+    repoHooks,
+    tmpHooksDir,
+    gitPath,
+    shellEnv,
+    options?.onHookProgress
+  )
 
   const server = createProxyProcessServer(
     conn =>

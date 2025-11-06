@@ -1,4 +1,4 @@
-import { git, parseCommitSHA } from './core'
+import { git, HookProgress, parseCommitSHA } from './core'
 import { stageFiles } from './update-index'
 import { Repository } from '../../models/repository'
 import { WorkingDirectoryFileChange } from '../../models/status'
@@ -16,7 +16,8 @@ export async function createCommit(
   repository: Repository,
   message: string,
   files: ReadonlyArray<WorkingDirectoryFileChange>,
-  amend: boolean = false
+  amend: boolean = false,
+  onHookProgress?: (progress: HookProgress) => void
 ): Promise<string> {
   // Clear the staging area, our diffs reflect the difference between the
   // working directory and the last commit (if any) so our commits should
@@ -44,7 +45,9 @@ export async function createCommit(
         'commit-msg',
         'post-commit',
         'post-rewrite',
+        'pre-auto-gc',
       ],
+      onHookProgress,
     }
   )
   return parseCommitSHA(result)

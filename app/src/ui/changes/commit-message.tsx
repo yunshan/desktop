@@ -64,6 +64,8 @@ import { isDotCom } from '../../lib/endpoint-capabilities'
 import { WorkingDirectoryFileChange } from '../../models/status'
 import { enableCommitMessageGeneration } from '../../lib/feature-flag'
 import { AriaLiveContainer } from '../accessibility/aria-live-container'
+import { HookProgress } from '../../lib/git'
+import { assertNever } from '../../lib/fatal-error'
 
 const addAuthorIcon: OcticonSymbolVariant = {
   w: 18,
@@ -107,6 +109,8 @@ interface ICommitMessageProps {
   readonly repositoryAccount: Account | null
   readonly autocompletionProviders: ReadonlyArray<IAutocompletionProvider<any>>
   readonly isCommitting?: boolean
+  readonly isRunningGitGC: boolean
+  readonly hookProgress: HookProgress | null
   readonly isGeneratingCommitMessage?: boolean
   readonly shouldShowGenerateCommitMessageCallOut?: boolean
   readonly commitToAmend: Commit | null
@@ -1546,6 +1550,59 @@ export class CommitMessage extends React.Component<
     )
   }
 
+  private renderCommitProgress() {
+    const { isCommitting, isRunningGitGC, hookProgress } = this.props
+    if (!isCommitting) {
+      // return (
+      //   <div className="commit-progress finished">
+      //     <Octicon symbol={octicons.terminal} />
+      //     <span>pre-commit hook finished</span>
+      //   </div>
+      // )
+      return null
+    }
+
+    if (isRunningGitGC) {
+      return (
+        <div className="commit-progress">
+          <Loading />
+          <span>Optimizing repository…</span>
+        </div>
+      )
+    }
+
+    if (!hookProgress) {
+      return null
+    }
+
+    const { status, hookName } = hookProgress
+
+    // const icon =
+    //   status === 'started' ? (
+    //     <Octicon symbol={octicons.clockFill} />
+    //   ) : status === 'finished' ? (
+    //     <Octicon symbol={octicons.checkCircleFill} height={12} />
+    //   ) : status === 'failed' ? (
+    //     <Octicon symbol={octicons.xCircleFill} height={12} />
+    //   ) : null
+
+    const text =
+      status === 'started'
+        ? `${hookName} hook running…`
+        : status === 'finished'
+        ? `${hookName} hook finished`
+        : status === 'failed'
+        ? `${hookName} hook failed`
+        : assertNever(status, `Unknown hook status: ${status}`)
+
+    return (
+      <div className="commit-progress">
+        <Octicon symbol={octicons.terminal} />
+        <span>{text}</span>
+      </div>
+    )
+  }
+
   public render() {
     const className = classNames('commit-message-component', {
       'with-action-bar': this.isActionBarEnabled,
@@ -1660,6 +1717,7 @@ export class CommitMessage extends React.Component<
         {this.renderBranchProtectionsRepoRulesCommitWarning()}
 
         {this.renderSubmitButton()}
+        {this.renderCommitProgress()}
         <span className="sr-only" aria-live="polite" aria-atomic="true">
           {this.state.isCommittingStatusMessage}
         </span>

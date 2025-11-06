@@ -33,6 +33,7 @@ import { IAheadBehind } from '../../models/branch'
 import { Emoji } from '../../lib/emoji'
 import { enableFilteredChangesList } from '../../lib/feature-flag'
 import { FilterChangesList } from './filter-changes-list'
+import { HookProgress } from '../../lib/git'
 
 /**
  * The timeout for the animation of the enter/leave animation for Undo.
@@ -56,6 +57,8 @@ interface IChangesSidebarProps {
   readonly issuesStore: IssuesStore
   readonly availableWidth: number
   readonly isCommitting: boolean
+  readonly isRunningGitGC: boolean
+  readonly hookProgress: HookProgress | null
   readonly isGeneratingCommitMessage: boolean
   readonly shouldShowGenerateCommitMessageCallOut: boolean
   readonly commitToAmend: Commit | null
@@ -439,6 +442,8 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
           onIgnoreFile={this.onIgnoreFile}
           onIgnorePattern={this.onIgnorePattern}
           isCommitting={this.props.isCommitting}
+          isRunningGitGC={this.props.isRunningGitGC}
+          hookProgress={this.props.hookProgress}
           isGeneratingCommitMessage={this.props.isGeneratingCommitMessage}
           shouldShowGenerateCommitMessageCallOut={
             this.props.shouldShowGenerateCommitMessageCallOut

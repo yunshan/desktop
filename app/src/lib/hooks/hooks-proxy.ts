@@ -5,6 +5,7 @@ import { basename, join } from 'path'
 import { ProcessProxyConnection } from 'process-proxy'
 import { Writable } from 'stream'
 import { pipeline } from 'stream/promises'
+import type { HookProgress } from '../git'
 
 const hooksUsingStdin = ['post-rewrite']
 
@@ -45,7 +46,8 @@ export const createHooksProxy = (
   repoHooks: string[],
   tmpDir: string,
   gitPath: string,
-  shellEnv: Record<string, string | undefined>
+  shellEnv: Record<string, string | undefined>,
+  onHookProgress?: (progress: HookProgress) => void
 ) => {
   return async (connection: ProcessProxyConnection) => {
     const startTime = Date.now()
@@ -56,6 +58,14 @@ export const createHooksProxy = (
     const hookName = __WIN32__
       ? basename(proxyArgs[0]).replace(/\.exe$/i, '')
       : basename(proxyArgs[0])
+
+    const abortController = new AbortController()
+
+    onHookProgress?.({
+      hookName,
+      status: 'started',
+      abort: () => abortController.abort(),
+    })
 
     const excludedEnvVars = new Set([
       // Dugite sets these, we don't want to leak them into the hook environment
@@ -103,6 +113,12 @@ export const createHooksProxy = (
       await pipeline(connection.stdin, createWriteStream(stdinFilePath))
     }
 
+    if (abortController.signal.aborted) {
+      debug(`hook ${hookName} aborted before execution`)
+      await exitWithError(connection, `Hook ${hookName} aborted`)
+      return
+    }
+
     const args = [
       'hook',
       'run',
@@ -111,11 +127,10 @@ export const createHooksProxy = (
       '--',
       ...proxyArgs.slice(1),
     ]
-    const { code } = await new Promise<{
+    const { code, signal } = await new Promise<{
       code: number | null
       signal: NodeJS.Signals | null
     }>((resolve, reject) => {
-      const abortController = new AbortController()
       connection.on('close', () => abortController.abort())
 
       const child = spawn(gitPath, args, {
@@ -132,7 +147,17 @@ export const createHooksProxy = (
       // hooks never write to stdout
       // https://github.com/git/git/blob/4cf919bd7b946477798af5414a371b23fd68bf93/hook.c#L73C6-L73C22
       child.stderr.pipe(connection.stderr).on('error', reject)
+      child.stderr.on('data', data =>
+        console.log('hooks stderr:', data.toString())
+      )
     })
+
+    if (signal !== null) {
+      debug(`hook ${hookName} was killed by signal ${signal}`)
+      connection.stderr.write(
+        `error: ${hookName} hook received signal ${signal}\n`
+      )
+    }
 
     await waitForWritableFinished(connection.stderr).catch(e => {
       debug(`waiting for stderr to finish failed`, e)
@@ -142,8 +167,16 @@ export const createHooksProxy = (
     debug(
       `executed ${hookName}: exited with code ${code} in ${elapsedSeconds}s`
     )
+
+    const exitCode = code ?? 1
     await connection
-      .exit(code ?? 0)
+      .exit(exitCode)
       .catch(err => debug(`failed to exit proxy:`, err))
+      .then(() =>
+        onHookProgress?.({
+          hookName,
+          status: exitCode === 0 ? 'finished' : 'failed',
+        })
+      )
   }
 }

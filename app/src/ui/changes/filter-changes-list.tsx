@@ -73,6 +73,7 @@ import {
   applyFilters,
 } from './filter-changes-logic'
 import { ChangesListFilterOptions } from './changes-list-filter-options'
+import { HookProgress } from '../../lib/git'
 
 export interface IChangesListItem extends IFilterListItem {
   readonly id: string
@@ -157,6 +158,8 @@ interface IFilterChangesListProps {
   readonly dispatcher: Dispatcher
   readonly availableWidth: number
   readonly isCommitting: boolean
+  readonly isRunningGitGC: boolean
+  readonly hookProgress: HookProgress | null
   readonly isGeneratingCommitMessage: boolean
   readonly shouldShowGenerateCommitMessageCallOut: boolean
   readonly commitToAmend: Commit | null
@@ -865,6 +868,8 @@ export class FilterChangesList extends React.Component<
       repositoryAccount,
       dispatcher,
       isCommitting,
+      isRunningGitGC,
+      hookProgress,
       isGeneratingCommitMessage,
       commitToAmend,
       currentBranchProtected,
@@ -941,6 +946,8 @@ export class FilterChangesList extends React.Component<
         focusCommitMessage={this.props.focusCommitMessage}
         autocompletionProviders={this.props.autocompletionProviders}
         isCommitting={isCommitting}
+        isRunningGitGC={isRunningGitGC}
+        hookProgress={hookProgress}
         isGeneratingCommitMessage={isGeneratingCommitMessage}
         shouldShowGenerateCommitMessageCallOut={
           shouldShowGenerateCommitMessageCallOut

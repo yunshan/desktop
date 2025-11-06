@@ -37,6 +37,19 @@ export const isMaxBufferExceededError = (
   )
 }
 
+export type HookProgress =
+  | {
+      readonly hookName: string
+    } & (
+      | {
+          readonly status: 'started'
+          readonly abort: () => void
+        }
+      | {
+          readonly status: 'finished' | 'failed'
+        }
+    )
+
 /**
  * An extension of the execution options in dugite that
  * allows us to piggy-back our own configuration options in the
@@ -66,6 +79,7 @@ export interface IGitExecutionOptions extends DugiteExecutionOptions {
   readonly isBackgroundTask?: boolean
 
   readonly interceptHooks?: boolean | string[]
+  readonly onHookProgress?: (progress: HookProgress) => void
 }
 
 /**

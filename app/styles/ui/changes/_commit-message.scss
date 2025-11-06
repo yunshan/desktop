@@ -12,6 +12,18 @@
 
   padding: var(--spacing);
 
+  .commit-progress {
+    color: var(--text-secondary-color);
+
+    display: flex;
+    align-items: center;
+    margin-top: var(--spacing-half);
+    svg.octicon {
+      margin-right: 3px;
+      height: 12px;
+    }
+  }
+
   .copilot-disclaimer-popover-header {
     display: flex;
 
