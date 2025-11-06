@@ -3309,6 +3309,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
     return this.withIsCommitting(repository, async () => {
       const result = await gitStore.performFailableOperation(async () => {
         const message = await formatCommitMessage(repository, context)
+        let aborted = false
         return createCommit(repository, message, selectedFiles, {
           amend: context.amend,
           onHookProgress: hookProgress => {
@@ -3324,7 +3325,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
                 type: PopupType.HookFailed,
                 hookName,
                 terminalOutput,
-                resolve,
+                resolve: resolution => {
+                  if (resolution === 'abort') {
+                    aborted = true
+                  }
+                  resolve(resolution)
+                },
               })
             }),
           onTerminalOutputAvailable: subscribeToCommitOutput => {
@@ -3333,7 +3339,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
               subscribeToCommitOutput,
             }))
           },
-        })
+        }).catch(err => (aborted ? undefined : Promise.reject(err)))
       })
 
       if (result !== undefined) {
