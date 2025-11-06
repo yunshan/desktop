@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogFooter } from '../dialog'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { TerminalOutputListener } from '../../lib/git'
 import { Terminal } from '@xterm/xterm'
+import { defaultTerminalOptions } from '../static-terminal'
 
 interface ICommitProgressProps {
   readonly subscribeToCommitOutput: TerminalOutputListener
@@ -25,13 +26,9 @@ export class CommitProgress extends React.Component<ICommitProgressProps> {
   public componentDidMount() {
     if (this.terminalRef.current) {
       this.terminal = new Terminal({
-        disableStdin: true,
-        convertEol: true,
+        ...defaultTerminalOptions,
         rows: 20,
         cols: 80,
-        fontSize: 12,
-        fontFamily:
-          "SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace, 'Apple Color Emoji', 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol'",
       })
 
       this.terminal.open(this.terminalRef.current)
