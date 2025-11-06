@@ -470,6 +470,7 @@ export type PopupDetail =
   | {
       type: PopupType.HookFailed
       hookName: string
+      terminalOutput: string
       resolve: (value: 'abort' | 'ignore') => void
     }
   | {

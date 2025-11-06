@@ -54,7 +54,10 @@ export const createHooksProxy = (
   gitPath: string,
   shellEnv: Record<string, string | undefined>,
   onHookProgress?: (progress: HookProgress) => void,
-  onHookFailure?: (hookName: string) => Promise<'abort' | 'ignore'>
+  onHookFailure?: (
+    hookName: string,
+    terminalOutput: string
+  ) => Promise<'abort' | 'ignore'>
 ) => {
   return async (conn: ProcessProxyConnection) => {
     const startTime = Date.now()
@@ -136,6 +139,9 @@ export const createHooksProxy = (
       '--',
       ...proxyArgs.slice(1),
     ]
+
+    const terminalOutput: Buffer[] = []
+
     const { code, signal } = await new Promise<{
       code: number | null
       signal: NodeJS.Signals | null
@@ -156,9 +162,10 @@ export const createHooksProxy = (
       // hooks never write to stdout
       // https://github.com/git/git/blob/4cf919bd7b946477798af5414a371b23fd68bf93/hook.c#L73C6-L73C22
       child.stderr.pipe(conn.stderr, { end: false }).on('error', reject)
-      child.stderr.on('data', data =>
+      child.stderr.on('data', data => {
+        terminalOutput.push(data)
         console.log('hooks stderr:', data.toString())
-      )
+      })
     })
 
     if (signal !== null) {
@@ -175,7 +182,10 @@ export const createHooksProxy = (
       code !== 0 &&
       !ignoredOnFailureHooks.includes(hookName) &&
       onHookFailure
-        ? (await onHookFailure(hookName)) === 'ignore'
+        ? (await onHookFailure(
+            hookName,
+            Buffer.concat(terminalOutput).toString()
+          )) === 'ignore'
         : false
 
     if (ignoreError) {

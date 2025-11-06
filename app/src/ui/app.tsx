@@ -2582,6 +2582,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           <HookFailed
             key="hook-failure-dialog"
             hookName={popup.hookName}
+            terminalOutput={popup.terminalOutput}
             resolve={popup.resolve}
             onDismissed={onPopupDismissedFn}
           />

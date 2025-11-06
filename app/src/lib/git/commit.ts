@@ -24,7 +24,10 @@ export async function createCommit(
   options?: {
     amend?: boolean
     onHookProgress?: (progress: HookProgress) => void
-    onHookFailure?: (hookName: string) => Promise<'abort' | 'ignore'>
+    onHookFailure?: (
+      hookName: string,
+      terminalOutput: string
+    ) => Promise<'abort' | 'ignore'>
     onTerminalOutputAvailable?: TerminalOutputCallback
   }
 ): Promise<string> {

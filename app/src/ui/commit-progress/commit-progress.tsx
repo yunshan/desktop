@@ -47,6 +47,8 @@ export class CommitProgress extends React.Component<ICommitProgressProps> {
   public componentWillUnmount() {
     this.unsubscribe?.()
     this.unsubscribe = undefined
+    this.terminal?.dispose()
+    this.terminal = null
   }
 
   public render() {

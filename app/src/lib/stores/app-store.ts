@@ -3318,9 +3318,14 @@ export class AppStore extends TypedBaseStore<IAppState> {
             }))
             this.emitUpdate()
           },
-          onHookFailure: hookName =>
+          onHookFailure: (hookName, terminalOutput) =>
             new Promise(resolve => {
-              this._showPopup({ type: PopupType.HookFailed, hookName, resolve })
+              this._showPopup({
+                type: PopupType.HookFailed,
+                hookName,
+                terminalOutput,
+                resolve,
+              })
             }),
           onTerminalOutputAvailable: subscribeToCommitOutput => {
             this.repositoryStateCache.update(repository, state => ({
