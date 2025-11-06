@@ -162,10 +162,7 @@ export const createHooksProxy = (
       // hooks never write to stdout
       // https://github.com/git/git/blob/4cf919bd7b946477798af5414a371b23fd68bf93/hook.c#L73C6-L73C22
       child.stderr.pipe(conn.stderr, { end: false }).on('error', reject)
-      child.stderr.on('data', data => {
-        terminalOutput.push(data)
-        console.log('hooks stderr:', data.toString())
-      })
+      child.stderr.on('data', data => terminalOutput.push(data))
     })
 
     if (signal !== null) {
