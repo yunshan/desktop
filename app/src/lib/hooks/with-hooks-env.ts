@@ -53,7 +53,8 @@ export async function withHooksEnv<T>(
     tmpHooksDir,
     gitPath,
     shellEnv,
-    options?.onHookProgress
+    options?.onHookProgress,
+    options?.onHookFailure
   )
 
   const server = createProxyProcessServer(

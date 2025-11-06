@@ -3320,7 +3320,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
               hookProgress,
             }))
             this.emitUpdate()
-          }
+          },
+          hookName =>
+            new Promise(resolve => {
+              this._showPopup({ type: PopupType.HookFailed, hookName, resolve })
+            })
         )
       })
 

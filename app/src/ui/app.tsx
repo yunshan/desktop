@@ -198,6 +198,7 @@ import {
   BypassReason,
   BypassReasonType,
 } from './secret-scanning/bypass-push-protection-dialog'
+import { HookFailed } from './hook-failed/hook-failed'
 
 const MinuteInMilliseconds = 1000 * 60
 const HourInMilliseconds = MinuteInMilliseconds * 60
@@ -2571,6 +2572,16 @@ export class App extends React.Component<IAppProps, IAppState> {
             dispatcher={this.props.dispatcher}
             repository={popup.repository}
             filesSelected={popup.filesSelected}
+            onDismissed={onPopupDismissedFn}
+          />
+        )
+      }
+      case PopupType.HookFailed: {
+        return (
+          <HookFailed
+            key="hook-failure-dialog"
+            hookName={popup.hookName}
+            resolve={popup.resolve}
             onDismissed={onPopupDismissedFn}
           />
         )

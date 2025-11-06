@@ -17,7 +17,8 @@ export async function createCommit(
   message: string,
   files: ReadonlyArray<WorkingDirectoryFileChange>,
   amend: boolean = false,
-  onHookProgress?: (progress: HookProgress) => void
+  onHookProgress?: (progress: HookProgress) => void,
+  onHookFailure?: (hookName: string) => Promise<'abort' | 'ignore'>
 ): Promise<string> {
   // Clear the staging area, our diffs reflect the difference between the
   // working directory and the last commit (if any) so our commits should
@@ -48,6 +49,7 @@ export async function createCommit(
         'pre-auto-gc',
       ],
       onHookProgress,
+      onHookFailure,
     }
   )
   return parseCommitSHA(result)

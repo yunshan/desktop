@@ -103,6 +103,7 @@ export enum PopupType {
   BypassPushProtection = 'BypassPushProtection',
   GenerateCommitMessageOverrideWarning = 'GenerateCommitMessageOverrideWarning',
   GenerateCommitMessageDisclaimer = 'GenerateCommitMessageDisclaimer',
+  HookFailed = 'HookFailed',
 }
 
 interface IBasePopup {
@@ -464,5 +465,9 @@ export type PopupDetail =
       repository: Repository
       filesSelected: ReadonlyArray<WorkingDirectoryFileChange>
     }
-
+  | {
+      type: PopupType.HookFailed
+      hookName: string
+      resolve: (value: 'abort' | 'ignore') => void
+    }
 export type Popup = IBasePopup & PopupDetail

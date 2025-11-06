@@ -23,10 +23,10 @@ const waitForWritableFinished = (stream: Writable) => {
   })
 }
 
-const exitWithError = (
+const exitWithMessage = (
   connection: ProcessProxyConnection,
   message: string,
-  exitCode = 1
+  exitCode = 0
 ) => {
   return new Promise<void>((resolve, reject) => {
     connection.stderr.end(`${message}\n`, () => {
@@ -42,18 +42,25 @@ const exitWithError = (
   })
 }
 
+const exitWithError = (
+  connection: ProcessProxyConnection,
+  message: string,
+  exitCode = 1
+) => exitWithMessage(connection, message, exitCode)
+
 export const createHooksProxy = (
   repoHooks: string[],
   tmpDir: string,
   gitPath: string,
   shellEnv: Record<string, string | undefined>,
-  onHookProgress?: (progress: HookProgress) => void
+  onHookProgress?: (progress: HookProgress) => void,
+  onHookFailure?: (hookName: string) => Promise<'abort' | 'ignore'>
 ) => {
-  return async (connection: ProcessProxyConnection) => {
+  return async (conn: ProcessProxyConnection) => {
     const startTime = Date.now()
-    const proxyArgs = await connection.getArgs()
-    const proxyEnv = await connection.getEnv()
-    const proxyCwd = await connection.getCwd()
+    const proxyArgs = await conn.getArgs()
+    const proxyEnv = await conn.getEnv()
+    const proxyCwd = await conn.getCwd()
 
     const hookName = __WIN32__
       ? basename(proxyArgs[0]).replace(/\.exe$/i, '')
@@ -99,7 +106,7 @@ export const createHooksProxy = (
     if (!hooksExecutable) {
       debug(`hook executable not found for ${hookName}`)
       await exitWithError(
-        connection,
+        conn,
         `Error: hook executable not found for ${hookName}`
       )
       return
@@ -110,12 +117,12 @@ export const createHooksProxy = (
     const hasStdin = hooksUsingStdin.includes(hookName)
 
     if (hasStdin) {
-      await pipeline(connection.stdin, createWriteStream(stdinFilePath))
+      await pipeline(conn.stdin, createWriteStream(stdinFilePath))
     }
 
     if (abortController.signal.aborted) {
       debug(`hook ${hookName} aborted before execution`)
-      await exitWithError(connection, `Hook ${hookName} aborted`)
+      await exitWithError(conn, `Hook ${hookName} aborted`)
       return
     }
 
@@ -131,7 +138,7 @@ export const createHooksProxy = (
       code: number | null
       signal: NodeJS.Signals | null
     }>((resolve, reject) => {
-      connection.on('close', () => abortController.abort())
+      conn.on('close', () => abortController.abort())
 
       const child = spawn(gitPath, args, {
         cwd: proxyCwd,
@@ -146,7 +153,7 @@ export const createHooksProxy = (
 
       // hooks never write to stdout
       // https://github.com/git/git/blob/4cf919bd7b946477798af5414a371b23fd68bf93/hook.c#L73C6-L73C22
-      child.stderr.pipe(connection.stderr).on('error', reject)
+      child.stderr.pipe(conn.stderr).on('error', reject)
       child.stderr.on('data', data =>
         console.log('hooks stderr:', data.toString())
       )
@@ -154,12 +161,9 @@ export const createHooksProxy = (
 
     if (signal !== null) {
       debug(`hook ${hookName} was killed by signal ${signal}`)
-      connection.stderr.write(
-        `error: ${hookName} hook received signal ${signal}\n`
-      )
     }
 
-    await waitForWritableFinished(connection.stderr).catch(e => {
+    await waitForWritableFinished(conn.stderr).catch(e => {
       debug(`waiting for stderr to finish failed`, e)
     })
 
@@ -168,15 +172,27 @@ export const createHooksProxy = (
       `executed ${hookName}: exited with code ${code} in ${elapsedSeconds}s`
     )
 
-    const exitCode = code ?? 1
-    await connection
-      .exit(exitCode)
-      .catch(err => debug(`failed to exit proxy:`, err))
-      .then(() =>
-        onHookProgress?.({
-          hookName,
-          status: exitCode === 0 ? 'finished' : 'failed',
-        })
-      )
+    const ignoreError =
+      code !== null && code !== 0 && onHookFailure
+        ? (await onHookFailure(hookName)) === 'ignore'
+        : false
+
+    if (ignoreError) {
+      debug(`ignoring error from hook ${hookName} as per onHookFailure result`)
+    }
+
+    const exitCode = ignoreError ? 0 : code ?? 1
+    const terminationReason = signal
+      ? `${hookName} received signal ${signal}`
+      : `${hookName} exited with code ${exitCode}${
+          ignoreError ? ' (ignored by user)' : ''
+        }`
+
+    await exitWithMessage(conn, terminationReason, exitCode)
+
+    onHookProgress?.({
+      hookName,
+      status: exitCode === 0 ? 'finished' : 'failed',
+    })
   }
 }
