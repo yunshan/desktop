@@ -3,24 +3,25 @@ import { randomBytes } from 'crypto'
 import { createWriteStream } from 'fs'
 import { basename, join } from 'path'
 import { ProcessProxyConnection } from 'process-proxy'
-import { Writable } from 'stream'
 import { pipeline } from 'stream/promises'
 import type { HookProgress } from '../git'
 
 const hooksUsingStdin = ['post-rewrite']
+const ignoredOnFailureHooks = [
+  'post-applypatch',
+  'post-commit',
+  // The exit code from post-checkout doesn't stop the checkout but it does set
+  // the overall command's exit code. I don't believe we want to show an error
+  // to the user if this hook fails though.
+  'post-checkout',
+  'post-merge',
+  // Again, the exit code here does affect Git in so far that it won't run
+  // git-gc but it's not something we should alert the user about.
+  'pre-auto-gc',
+]
 
 const debug = (message: string, error?: Error) => {
   log.debug(`hooks: ${message}`, error)
-}
-
-const waitForWritableFinished = (stream: Writable) => {
-  return new Promise<void>(resolve => {
-    if (stream.writableFinished) {
-      resolve()
-    } else {
-      stream.once('finish', () => resolve())
-    }
-  })
 }
 
 const exitWithMessage = (
@@ -28,16 +29,15 @@ const exitWithMessage = (
   message: string,
   exitCode = 0
 ) => {
-  return new Promise<void>((resolve, reject) => {
-    connection.stderr.end(`${message}\n`, () => {
-      connection.exit(exitCode).then(resolve, err => {
-        debug(
-          `failed to exit proxy: ${
-            err instanceof Error ? err.message : String(err)
-          }`
-        )
-        resolve()
-      })
+  return new Promise<void>(resolve => {
+    connection.stderr.end(`${message}\n`)
+    connection.exit(exitCode).then(resolve, err => {
+      debug(
+        `failed to exit proxy: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      )
+      resolve()
     })
   })
 }
@@ -153,7 +153,7 @@ export const createHooksProxy = (
 
       // hooks never write to stdout
       // https://github.com/git/git/blob/4cf919bd7b946477798af5414a371b23fd68bf93/hook.c#L73C6-L73C22
-      child.stderr.pipe(conn.stderr).on('error', reject)
+      child.stderr.pipe(conn.stderr, { end: false }).on('error', reject)
       child.stderr.on('data', data =>
         console.log('hooks stderr:', data.toString())
       )
@@ -163,17 +163,16 @@ export const createHooksProxy = (
       debug(`hook ${hookName} was killed by signal ${signal}`)
     }
 
-    await waitForWritableFinished(conn.stderr).catch(e => {
-      debug(`waiting for stderr to finish failed`, e)
-    })
-
     const elapsedSeconds = (Date.now() - startTime) / 1000
     debug(
       `executed ${hookName}: exited with code ${code} in ${elapsedSeconds}s`
     )
 
     const ignoreError =
-      code !== null && code !== 0 && onHookFailure
+      code !== null &&
+      code !== 0 &&
+      !ignoredOnFailureHooks.includes(hookName) &&
+      onHookFailure
         ? (await onHookFailure(hookName)) === 'ignore'
         : false
 
@@ -183,8 +182,8 @@ export const createHooksProxy = (
 
     const exitCode = ignoreError ? 0 : code ?? 1
     const terminationReason = signal
-      ? `${hookName} received signal ${signal}`
-      : `${hookName} exited with code ${exitCode}${
+      ? `${hookName} hook killed by signal ${signal}`
+      : `${hookName} hook exited with code ${exitCode}${
           ignoreError ? ' (ignored by user)' : ''
         }`
 
