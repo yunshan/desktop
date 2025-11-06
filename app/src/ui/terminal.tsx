@@ -1,7 +1,7 @@
 import {
   ITerminalOptions,
   ITerminalInitOnlyOptions,
-  Terminal,
+  Terminal as XTermTerminal,
 } from '@xterm/xterm'
 import React from 'react'
 import { getMonospaceFontFamily } from './get-monospace-font-family'
@@ -13,31 +13,32 @@ export const defaultTerminalOptions: Readonly<ITerminalOptions> = {
   screenReaderMode: true,
 }
 
-export type StaticTerminalProps = ITerminalOptions &
+export type TerminalProps = ITerminalOptions &
   ITerminalInitOnlyOptions & {
-    readonly terminalOutput: string
+    readonly terminalOutput?: string
     readonly hideCursor?: boolean
   }
 
-export class StaticTerminal extends React.Component<StaticTerminalProps> {
+export class Terminal extends React.Component<TerminalProps> {
   private terminalRef = React.createRef<HTMLDivElement>()
-  private terminal: Terminal | null = null
+  private terminal: XTermTerminal | null = null
+
+  public get Terminal() {
+    return this.terminal
+  }
+
+  public write(data: string | Buffer) {
+    this.terminal?.write(data)
+  }
 
   public componentDidMount() {
-    const { terminalOutput, ...initOpts } = this.props
-    this.terminal = new Terminal({
+    const { terminalOutput, hideCursor, ...initOpts } = this.props
+    this.terminal = new XTermTerminal({
       ...defaultTerminalOptions,
       ...initOpts,
 
       rows: this.props.rows ?? 20,
       cols: this.props.cols ?? 80,
-    })
-
-    this.terminal.onKey(({ key, domEvent }) => {
-      if (domEvent.key === 'ArrowUp' || domEvent.key === 'ArrowDown') {
-        this.terminal?.scrollLines(domEvent.key === 'ArrowUp' ? -1 : 1)
-        return
-      }
     })
 
     if (this.terminalRef.current) {
@@ -47,14 +48,16 @@ export class StaticTerminal extends React.Component<StaticTerminalProps> {
         this.terminal.textarea.disabled = true
       }
 
-      if (this.props.hideCursor !== false) {
+      if (hideCursor !== false) {
         this.terminal.write('\x1b[?25l') // hide cursor
-        this.terminal.write(terminalOutput.trimEnd())
+        if (terminalOutput) {
+          this.terminal.write(terminalOutput.trimEnd())
+        }
       }
     }
   }
 
   public render() {
-    return <div ref={this.terminalRef} className="static-terminal"></div>
+    return <div ref={this.terminalRef}></div>
   }
 }

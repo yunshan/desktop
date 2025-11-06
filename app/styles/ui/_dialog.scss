@@ -358,7 +358,7 @@ dialog {
     &.raw-git-error {
       max-width: 750px;
 
-      .static-terminal .xterm {
+      .xterm {
         padding: var(--spacing);
       }
     }

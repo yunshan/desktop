@@ -3,9 +3,7 @@ import * as React from 'react'
 import { Dialog, DialogContent, DialogFooter } from '../dialog'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { TerminalOutputListener } from '../../lib/git'
-import { Terminal } from '@xterm/xterm'
-import { defaultTerminalOptions } from '../static-terminal'
-
+import { Terminal } from '../terminal'
 interface ICommitProgressProps {
   readonly subscribeToCommitOutput: TerminalOutputListener
   readonly onDismissed: () => void
@@ -14,8 +12,7 @@ interface ICommitProgressProps {
 /** A component to confirm and then discard changes. */
 export class CommitProgress extends React.Component<ICommitProgressProps> {
   private unsubscribe?: () => void | null
-  private terminalRef = React.createRef<HTMLDivElement>()
-  private terminal: Terminal | null = null
+  private terminalRef = React.createRef<Terminal>()
 
   private onDismissed = () => {
     this.unsubscribe?.()
@@ -24,19 +21,9 @@ export class CommitProgress extends React.Component<ICommitProgressProps> {
   }
 
   public componentDidMount() {
-    if (this.terminalRef.current) {
-      this.terminal = new Terminal({
-        ...defaultTerminalOptions,
-        rows: 20,
-        cols: 80,
-      })
-
-      this.terminal.open(this.terminalRef.current)
-    }
-
-    const { unsubscribe } = this.props.subscribeToCommitOutput(chunk => {
-      this.terminal?.write(chunk)
-    })
+    const { unsubscribe } = this.props.subscribeToCommitOutput(chunk =>
+      this.terminalRef.current?.write(chunk)
+    )
 
     this.unsubscribe = unsubscribe
   }
@@ -44,8 +31,6 @@ export class CommitProgress extends React.Component<ICommitProgressProps> {
   public componentWillUnmount() {
     this.unsubscribe?.()
     this.unsubscribe = undefined
-    this.terminal?.dispose()
-    this.terminal = null
   }
 
   public render() {
@@ -57,7 +42,12 @@ export class CommitProgress extends React.Component<ICommitProgressProps> {
         onSubmit={this.onDismissed}
       >
         <DialogContent>
-          <div className="terminal-container" ref={this.terminalRef}></div>
+          <Terminal
+            ref={this.terminalRef}
+            hideCursor={true}
+            cols={80}
+            rows={20}
+          />
         </DialogContent>
 
         <DialogFooter>

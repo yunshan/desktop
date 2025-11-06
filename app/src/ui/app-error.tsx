@@ -17,7 +17,7 @@ import { GitError as DugiteError } from 'dugite'
 import { LinkButton } from './lib/link-button'
 import { getFileFromExceedsError } from '../lib/helpers/regex'
 import { CopilotError } from '../lib/copilot-error'
-import { StaticTerminal } from './static-terminal'
+import { Terminal } from './terminal'
 
 interface IAppErrorProps {
   /** The error to be displayed  */
@@ -96,7 +96,7 @@ export class AppError extends React.Component<IAppErrorProps, IAppErrorState> {
     // If the error message is just the raw git output, display it in
     // fixed-width font
     if (isRawGitError(e)) {
-      return <StaticTerminal terminalOutput={e.message} rows={15} cols={80} />
+      return <Terminal terminalOutput={e.message} rows={15} cols={80} />
     }
 
     if (

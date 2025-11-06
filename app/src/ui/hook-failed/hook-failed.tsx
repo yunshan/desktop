@@ -2,7 +2,7 @@ import * as React from 'react'
 
 import { Dialog, DialogContent, DialogFooter } from '../dialog'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
-import { StaticTerminal } from '../static-terminal'
+import { Terminal } from '../terminal'
 
 interface IHookFailedProps {
   readonly hookName: string
@@ -42,7 +42,7 @@ export class HookFailed extends React.Component<IHookFailedProps> {
           <p id="hook-failure-message">
             The {this.props.hookName} hook failed. What would you like to do?
           </p>
-          <StaticTerminal
+          <Terminal
             terminalOutput={this.props.terminalOutput}
             rows={15}
             cols={80}
