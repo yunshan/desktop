@@ -1,31 +1,81 @@
-import memoizeOne from 'memoize-one'
-import { Shescape } from 'shescape'
+import { pathExists } from 'fs-extra'
+import { join } from 'path'
+import which from 'which'
+import { bash, cmd } from './shell-escape'
 
-const getQuoteFn = memoizeOne((shell: string) => {
-  const shescape = new Shescape({ shell, flagProtection: false })
-  return {
-    escape: shescape.escape.bind(shescape),
-    quote: shescape.quote.bind(shescape),
+type Shell = {
+  shell: string
+  args: string[]
+  quoteCommand: (cmd: string, ...args: string[]) => string
+  windowsVerbatimArguments?: boolean
+  argv0?: string
+}
+
+export const findGitBash = async () => {
+  const gitPath = await which('git', { nothrow: true })
+
+  if (!gitPath) {
+    return null
   }
-})
 
-export const getShell = () => {
-  // TODO: Windows:
-  if (__WIN32__) {
-    throw new Error('Not implemented')
+  if (!gitPath.toLowerCase().endsWith('\\cmd\\git.exe')) {
+    return null
   }
 
-  if (process.env.SHELL) {
+  const bashPath = join(gitPath, '../../usr/bin/bash.exe')
+  return (await pathExists(bashPath)) ? bashPath : null
+}
+
+// // https://github.com/git-for-windows/git/blob/bd2ecbae58213046a468256b95fc4864de25bdf5/compat/mingw.c#L1690-L1718
+// const quoteArgMsys2 = (arg: string) => {
+//   return /[\s\\"'{?*~]/.test(arg) ? `"${arg.replace(/(["\\])/g, '\\$1')}"` : arg
+// }
+
+const findWindowsShell = async (): Promise<Shell> => {
+  const gitBashPath = await findGitBash()
+
+  if (gitBashPath) {
+    const { args, quoteCommand } = bash
     return {
-      shell: process.env.SHELL,
-      args: ['-ilc'],
-      ...getQuoteFn(process.env.SHELL),
+      shell: gitBashPath,
+      args,
+      quoteCommand: (cmd, ...args) => `"${quoteCommand(cmd, ...args)}"`,
+      // MSYS2 doesn't use the argv it's given, instead it re-parses the
+      // commandline from GetCommandLineW and it doesn't comform to the
+      // usual Windows quoting rules. So we need to opt out of Node.js's
+      // quoting behavior and do it ourselves.
+      //
+      // See https://github.com/git-for-windows/git/commit/9e9da23c27650
+      windowsVerbatimArguments: true,
+      // With windowsVerbatimArguments set to true the filename passed to
+      // spawn won't get quoted by Node.js so he msys2 custom argument parser
+      // will blow up so we'll just hardcode argv[0] as bash.exe which is
+      // what it would be set to if a user ran bash.exe in a terminal and it
+      // was on PATH. The technically correct way would be to set quote it
+      // as msys2 expects it to be quoted but I'm too deep into Dantes nine
+      // circles of quoting already.
+      argv0: 'bash.exe',
     }
   }
 
-  return {
-    shell: '/bin/sh',
-    args: ['-ilc'],
-    ...getQuoteFn('/bin/sh'),
+  const { COMSPEC } = process.env
+  // https://github.com/nodejs/node/blob/5f77aebdfb3ea4d60cda79045d29afb244d6bcb1/lib/child_process.js#L660C31-L660C58
+  const shell =
+    COMSPEC && /^(?:.*\\)?cmd(?:\.exe)?$/i.test(COMSPEC) ? COMSPEC : 'cmd.exe'
+  const { args, quoteCommand } = cmd
+  return { shell, args, quoteCommand }
+}
+
+export const getShell = async (): Promise<Shell> => {
+  if (__WIN32__) {
+    return findWindowsShell()
   }
+
+  // For our purposes quoting using bash rules should be sufficient,
+  // we only need to pass a path to an executable that we control.
+  // Should we start using this to quote commands that Git gives us
+  // those are quite innocuous as well (like shas and paths). There
+  // shouldn't be any user input in there.
+  const { args, quoteCommand } = bash
+  return { shell: process.env.SHELL ?? '/bin/sh', args, quoteCommand }
 }
