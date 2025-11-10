@@ -26,7 +26,7 @@ export async function createCommit(
     onHookProgress?: (progress: HookProgress) => void
     onHookFailure?: (
       hookName: string,
-      terminalOutput: string
+      terminalOutput: ReadonlyArray<Buffer>
     ) => Promise<'abort' | 'ignore'>
     onTerminalOutputAvailable?: TerminalOutputCallback
   }

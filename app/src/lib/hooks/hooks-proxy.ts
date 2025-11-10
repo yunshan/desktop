@@ -73,7 +73,7 @@ export const createHooksProxy = (
   onHookProgress?: (progress: HookProgress) => void,
   onHookFailure?: (
     hookName: string,
-    terminalOutput: string
+    terminalOutput: ReadonlyArray<Buffer>
   ) => Promise<'abort' | 'ignore'>
 ) => {
   return async (conn: ProcessProxyConnection) => {

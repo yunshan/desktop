@@ -470,7 +470,7 @@ export type PopupDetail =
   | {
       type: PopupType.HookFailed
       hookName: string
-      terminalOutput: string
+      terminalOutput: string | Buffer | ReadonlyArray<Buffer>
       resolve: (value: 'abort' | 'ignore') => void
     }
   | {

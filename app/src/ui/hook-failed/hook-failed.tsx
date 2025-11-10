@@ -6,7 +6,7 @@ import { Terminal } from '../terminal'
 
 interface IHookFailedProps {
   readonly hookName: string
-  readonly terminalOutput: string
+  readonly terminalOutput: string | Buffer | ReadonlyArray<Buffer>
   readonly resolve: (value: 'abort' | 'ignore') => void
   readonly onDismissed: () => void
 }
