@@ -145,7 +145,7 @@ export const createHooksProxy = (
         .on('close', (code, signal) => resolve({ code, signal }))
         .on('error', err => reject(err))
 
-      // hooks never write to stdout
+      // git-hook run takes care of ensuring we only get hook output on stderr
       // https://github.com/git/git/blob/4cf919bd7b946477798af5414a371b23fd68bf93/hook.c#L73C6-L73C22
       child.stderr.pipe(conn.stderr, { end: false }).on('error', reject)
       child.stderr.on('data', data => terminalOutput.push(data))
