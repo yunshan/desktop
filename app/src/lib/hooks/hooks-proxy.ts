@@ -102,31 +102,6 @@ export const createHooksProxy = (
       )
     )
 
-    const hooksExecutable =
-      repoHooks.find(hook => hook.endsWith(hookName)) ??
-      (__WIN32__
-        ? repoHooks.find(hook => hook.endsWith(`${hookName}.exe`))
-        : undefined)
-
-    if (!hooksExecutable) {
-      if (hookName === 'pre-auto-gc') {
-        debug(`no pre-auto-gc hook found, auto-approving garbage collection`)
-        await exitWithMessage(
-          conn,
-          `No pre-auto-gc hook found in repository, auto-approving garbage collection.`,
-          0
-        )
-        return
-      }
-
-      debug(`hook executable not found for ${hookName}`)
-      await exitWithError(
-        conn,
-        `Error: hook executable not found for ${hookName}`
-      )
-      return
-    }
-
     // tmpdir is deleted when the Git call completes, so we can leave the file
     const stdinFilePath = join(tmpDir, `in-${randomBytes(8).toString('hex')}`)
     const hasStdin = hooksUsingStdin.includes(hookName)
@@ -145,6 +120,12 @@ export const createHooksProxy = (
       'hook',
       'run',
       hookName,
+      // We always copy our pre-auto-gc hook in order to be able to tell the
+      // user that the reason their commit is taking so long is because Git is
+      // performing garbage collection, but it's unlikely that the user has a
+      // pre-auto-gc hook configured themselves, so we tell Git to ignore
+      // missing hooks here.
+      ...(hookName === 'pre-auto-gc' ? ['--ignore-missing'] : []),
       ...(hasStdin ? ['--to-stdin', stdinFilePath] : []),
       '--',
       ...proxyArgs.slice(1),
