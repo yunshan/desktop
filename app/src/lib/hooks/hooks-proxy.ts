@@ -135,7 +135,7 @@ export const createHooksProxy = (
       code: number | null
       signal: NodeJS.Signals | null
     }>((resolve, reject) => {
-      conn.on('close', () => abortController.abort())
+      conn.on('close', abort)
 
       const child = spawn(gitPath, args, {
         cwd: proxyCwd,
