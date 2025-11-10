@@ -14,22 +14,6 @@ export const defaultTerminalOptions: Readonly<ITerminalOptions> = {
   screenReaderMode: true,
 }
 
-const bufferTrimEnd = (value: Buffer): Buffer => {
-  let i
-  for (i = value.length - 1; i >= 0; i--) {
-    switch (value[i]) {
-      case 0x20: // space
-      case 0x09: // tab
-      case 0x0a: // LF
-      case 0x0d: // CR
-        continue
-      default:
-        break
-    }
-  }
-  return i === value.length ? value : value.subarray(0, i)
-}
-
 export type TerminalProps = ITerminalOptions &
   ITerminalInitOnlyOptions & {
     readonly terminalOutput?: TerminalOutput
@@ -76,19 +60,7 @@ export class Terminal extends React.Component<TerminalProps> {
       if (hideCursor !== false) {
         this.terminal.write('\x1b[?25l') // hide cursor
         if (terminalOutput) {
-          if (typeof terminalOutput === 'string') {
-            this.terminal.write(terminalOutput.trimEnd())
-          } else if (Buffer.isBuffer(terminalOutput)) {
-            this.terminal.write(bufferTrimEnd(terminalOutput))
-          } else {
-            for (let i = 0; i < terminalOutput.length; i++) {
-              this.terminal.write(
-                i === terminalOutput.length - 1
-                  ? bufferTrimEnd(terminalOutput[i])
-                  : terminalOutput[i]
-              )
-            }
-          }
+          this.write(terminalOutput)
         }
       }
     }
