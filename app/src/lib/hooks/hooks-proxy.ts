@@ -4,7 +4,7 @@ import { createWriteStream } from 'fs'
 import { basename, join, resolve } from 'path'
 import { ProcessProxyConnection } from 'process-proxy'
 import { pipeline } from 'stream/promises'
-import type { HookProgress } from '../git'
+import type { HookProgress, TerminalOutput } from '../git'
 import { resolveGitBinary } from 'dugite'
 
 const hooksUsingStdin = ['post-rewrite']
@@ -72,7 +72,7 @@ export const createHooksProxy = (
   onHookProgress?: (progress: HookProgress) => void,
   onHookFailure?: (
     hookName: string,
-    terminalOutput: string | Buffer | ReadonlyArray<Buffer>
+    terminalOutput: TerminalOutput
   ) => Promise<'abort' | 'ignore'>
 ) => {
   return async (conn: ProcessProxyConnection) => {

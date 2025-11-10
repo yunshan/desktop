@@ -5,6 +5,7 @@ import {
 } from '@xterm/xterm'
 import React from 'react'
 import { getMonospaceFontFamily } from './get-monospace-font-family'
+import { TerminalOutput } from '../lib/git'
 
 export const defaultTerminalOptions: Readonly<ITerminalOptions> = {
   convertEol: true,
@@ -31,7 +32,7 @@ const bufferTrimEnd = (value: Buffer): Buffer => {
 
 export type TerminalProps = ITerminalOptions &
   ITerminalInitOnlyOptions & {
-    readonly terminalOutput?: string | Buffer | ReadonlyArray<Buffer>
+    readonly terminalOutput?: TerminalOutput
     readonly hideCursor?: boolean
   }
 
@@ -43,8 +44,12 @@ export class Terminal extends React.Component<TerminalProps> {
     return this.terminal
   }
 
-  public write(data: string | Buffer) {
-    this.terminal?.write(data)
+  public write(data: TerminalOutput) {
+    if (Array.isArray(data)) {
+      data.forEach(chunk => this.terminal?.write(chunk))
+    } else {
+      this.terminal?.write(data)
+    }
   }
 
   public componentWillUnmount(): void {

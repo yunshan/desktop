@@ -25,7 +25,7 @@ import { UnreachableCommitsTab } from '../ui/history/unreachable-commits-dialog'
 import { IAPIComment } from '../lib/api'
 import { ISecretScanResult } from '../ui/secret-scanning/push-protection-error-dialog'
 import { BypassReasonType } from '../ui/secret-scanning/bypass-push-protection-dialog'
-import { TerminalOutputListener } from '../lib/git'
+import { TerminalOutput, TerminalOutputListener } from '../lib/git'
 
 export enum PopupType {
   RenameBranch = 'RenameBranch',
@@ -470,7 +470,7 @@ export type PopupDetail =
   | {
       type: PopupType.HookFailed
       hookName: string
-      terminalOutput: string | Buffer | ReadonlyArray<Buffer>
+      terminalOutput: TerminalOutput
       resolve: (value: 'abort' | 'ignore') => void
     }
   | {

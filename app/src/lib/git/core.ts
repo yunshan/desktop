@@ -35,7 +35,9 @@ export const isMaxBufferExceededError = (
   )
 }
 
-export type TerminalOutputListener = (cb: (chunk: Buffer | string) => void) => {
+export type TerminalOutput = string | Buffer | Buffer[]
+
+export type TerminalOutputListener = (cb: (chunk: TerminalOutput) => void) => {
   unsubscribe: () => void
 }
 
@@ -86,7 +88,7 @@ export interface IGitExecutionOptions extends DugiteExecutionOptions {
   readonly onHookProgress?: (progress: HookProgress) => void
   readonly onHookFailure?: (
     hookName: string,
-    terminalOutput: string | Buffer | ReadonlyArray<Buffer>
+    terminalOutput: TerminalOutput
   ) => Promise<'abort' | 'ignore'>
 
   readonly onTerminalOutputAvailable?: TerminalOutputCallback

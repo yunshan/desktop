@@ -3,10 +3,11 @@ import * as React from 'react'
 import { Dialog, DialogContent, DialogFooter } from '../dialog'
 import { OkCancelButtonGroup } from '../dialog/ok-cancel-button-group'
 import { Terminal } from '../terminal'
+import { TerminalOutput } from '../../lib/git'
 
 interface IHookFailedProps {
   readonly hookName: string
-  readonly terminalOutput: string | Buffer | ReadonlyArray<Buffer>
+  readonly terminalOutput: TerminalOutput
   readonly resolve: (value: 'abort' | 'ignore') => void
   readonly onDismissed: () => void
 }

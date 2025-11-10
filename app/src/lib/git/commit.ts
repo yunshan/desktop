@@ -2,6 +2,7 @@ import {
   git,
   HookProgress,
   parseCommitSHA,
+  TerminalOutput,
   TerminalOutputCallback,
 } from './core'
 import { stageFiles } from './update-index'
@@ -26,7 +27,7 @@ export async function createCommit(
     onHookProgress?: (progress: HookProgress) => void
     onHookFailure?: (
       hookName: string,
-      terminalOutput: string | Buffer | ReadonlyArray<Buffer>
+      terminalOutput: TerminalOutput
     ) => Promise<'abort' | 'ignore'>
     onTerminalOutputAvailable?: TerminalOutputCallback
   }
