@@ -1551,7 +1551,7 @@ export class CommitMessage extends React.Component<
   }
 
   private renderCommitProgress() {
-    const { isCommitting, hookProgress } = this.props
+    const { isCommitting, hookProgress, onShowCommitProgress } = this.props
     if (!isCommitting || !hookProgress) {
       return null
     }
@@ -1569,14 +1569,14 @@ export class CommitMessage extends React.Component<
         ? `${hookName} hook failed`
         : assertNever(status, `Unknown hook status: ${status}`)
 
+    const cn = classNames('commit-progress', {
+      'with-button': onShowCommitProgress !== undefined,
+    })
     return (
-      <div className="commit-progress">
+      <div className={cn}>
         <div className="description">{text}</div>
-        {this.props.onShowCommitProgress && (
-          <Button
-            tooltip="Show commit progress"
-            onClick={this.props.onShowCommitProgress}
-          >
+        {onShowCommitProgress && (
+          <Button tooltip="Show commit progress" onClick={onShowCommitProgress}>
             <Octicon symbol={octicons.terminal} />
           </Button>
         )}

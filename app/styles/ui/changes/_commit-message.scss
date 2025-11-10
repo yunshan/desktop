@@ -13,8 +13,6 @@
   padding: var(--spacing);
 
   .commit-progress {
-    // color: var(--text-secondary-color);
-
     display: flex;
     align-items: center;
     margin-top: var(--spacing-half);
@@ -27,14 +25,24 @@
       border: var(--base-border);
       border-radius: var(--button-border-radius);
       border-color: var(--secondary-button-border-color);
-      border-right: 0;
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
+    }
+
+    &.with-button {
+      .description {
+        border-right: 0;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
     }
 
     button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      padding: 0;
+
       flex-shrink: 0;
-      padding: var(--spacing-third);
       height: 100%;
       border-left-width: 1px;
       border-top-left-radius: 0;
