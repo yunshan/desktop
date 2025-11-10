@@ -1,14 +1,13 @@
 import { cp, mkdtemp, rm } from 'fs/promises'
 import { AddressInfo } from 'net'
 import { tmpdir } from 'os'
-import { basename, join, resolve } from 'path'
+import { basename, join } from 'path'
 import { createProxyProcessServer } from 'process-proxy'
 import { enableHooksEnvironment } from '../feature-flag'
 import type { IGitExecutionOptions } from '../git/core'
 import { getRepoHooks } from './get-repo-hooks'
 import { createHooksProxy } from './hooks-proxy'
 import { getShellEnv } from './get-shell-env'
-import { resolveGitBinary } from 'dugite'
 
 export async function withHooksEnv<T>(
   fn: (env: Record<string, string | undefined> | undefined) => Promise<T>,
@@ -38,11 +37,6 @@ export async function withHooksEnv<T>(
     `hooks: loaded shell environment in ${Date.now() - shellEnvStartTime}ms`
   )
 
-  // TODO: will throw
-  const gitPathStartTime = Date.now()
-  const gitPath = resolveGitBinary(resolve(__dirname, 'git'))
-  log.debug(`hooks: located git in ${Date.now() - gitPathStartTime}ms`)
-
   const ext = __WIN32__ ? '.exe' : ''
   const processProxyPath = join(__dirname, `process-proxy${ext}`)
 
@@ -51,7 +45,6 @@ export async function withHooksEnv<T>(
   const hooksProxy = createHooksProxy(
     repoHooks,
     tmpHooksDir,
-    gitPath,
     shellEnv,
     options?.onHookProgress,
     options?.onHookFailure

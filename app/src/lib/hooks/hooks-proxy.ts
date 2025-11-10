@@ -1,10 +1,11 @@
 import { spawn } from 'child_process'
 import { randomBytes } from 'crypto'
 import { createWriteStream } from 'fs'
-import { basename, join } from 'path'
+import { basename, join, resolve } from 'path'
 import { ProcessProxyConnection } from 'process-proxy'
 import { pipeline } from 'stream/promises'
 import type { HookProgress } from '../git'
+import { resolveGitBinary } from 'dugite'
 
 const hooksUsingStdin = ['post-rewrite']
 const ignoredOnFailureHooks = [
@@ -51,7 +52,6 @@ const exitWithError = (
 export const createHooksProxy = (
   repoHooks: string[],
   tmpDir: string,
-  gitPath: string,
   shellEnv: Record<string, string | undefined>,
   onHookProgress?: (progress: HookProgress) => void,
   onHookFailure?: (
@@ -151,6 +151,7 @@ export const createHooksProxy = (
     ]
 
     const terminalOutput: Buffer[] = []
+    const gitPath = resolveGitBinary(resolve(__dirname, 'git'))
 
     const { code, signal } = await new Promise<{
       code: number | null
