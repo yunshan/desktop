@@ -2,7 +2,7 @@ import { spawn } from 'child_process'
 import { randomBytes } from 'crypto'
 import { createWriteStream } from 'fs'
 import { basename, join, resolve } from 'path'
-import { ProcessProxyConnection } from 'process-proxy'
+import { ProcessProxyConnection as Connection } from 'process-proxy'
 import { pipeline } from 'stream/promises'
 import type { HookProgress, TerminalOutput } from '../git'
 import { resolveGitBinary } from 'dugite'
@@ -42,14 +42,10 @@ const debug = (message: string, error?: Error) => {
   log.debug(`hooks: ${message}`, error)
 }
 
-const exitWithMessage = (
-  connection: ProcessProxyConnection,
-  message: string,
-  exitCode = 0
-) => {
+const exitWithMessage = (conn: Connection, msg: string, exitCode = 0) => {
   return new Promise<void>(resolve => {
-    connection.stderr.end(`${message}\n`)
-    connection.exit(exitCode).then(resolve, err => {
+    conn.stderr.end(`${msg}\n`)
+    conn.exit(exitCode).then(resolve, err => {
       debug(
         `failed to exit proxy: ${
           err instanceof Error ? err.message : String(err)
@@ -60,11 +56,8 @@ const exitWithMessage = (
   })
 }
 
-const exitWithError = (
-  connection: ProcessProxyConnection,
-  message: string,
-  exitCode = 1
-) => exitWithMessage(connection, message, exitCode)
+const exitWithError = (conn: Connection, msg: string, exitCode = 1) =>
+  exitWithMessage(conn, msg, exitCode)
 
 export const createHooksProxy = (
   tmpDir: string,
@@ -75,15 +68,13 @@ export const createHooksProxy = (
     terminalOutput: TerminalOutput
   ) => Promise<'abort' | 'ignore'>
 ) => {
-  return async (conn: ProcessProxyConnection) => {
+  return async (conn: Connection) => {
     const startTime = Date.now()
     const proxyArgs = await conn.getArgs()
     const proxyEnv = await conn.getEnv()
     const proxyCwd = await conn.getCwd()
 
-    const hookName = __WIN32__
-      ? basename(proxyArgs[0]).replace(/\.exe$/i, '')
-      : basename(proxyArgs[0])
+    const hookName = basename(proxyArgs[0], __WIN32__ ? '.exe' : undefined)
 
     const abortController = new AbortController()
     const abort = () => abortController.abort()
@@ -106,15 +97,13 @@ export const createHooksProxy = (
     }
 
     if (abortController.signal.aborted) {
-      debug(`hook ${hookName} aborted before execution`)
-      await exitWithError(conn, `Hook ${hookName} aborted`)
+      debug(`${hookName}: aborted before execution`)
+      await exitWithError(conn, `hook ${hookName} aborted`)
       return
     }
 
     const args = [
-      'hook',
-      'run',
-      hookName,
+      ...['hook', 'run', hookName],
       // We always copy our pre-auto-gc hook in order to be able to tell the
       // user that the reason their commit is taking so long is because Git is
       // performing garbage collection, but it's unlikely that the user has a
@@ -150,24 +139,20 @@ export const createHooksProxy = (
       child.stderr.on('data', data => terminalOutput.push(data))
     })
 
-    if (signal !== null) {
-      debug(`hook ${hookName} was killed by signal ${signal}`)
-    }
-
     const elapsedSeconds = (Date.now() - startTime) / 1000
-    debug(
-      `executed ${hookName}: exited with code ${code} in ${elapsedSeconds}s`
-    )
+
+    if (signal !== null) {
+      debug(`${hookName}: killed by signal ${signal} after ${elapsedSeconds}s`)
+    } else {
+      debug(`${hookName}: exited with code ${code} after ${elapsedSeconds}s`)
+    }
 
     const ignoreError =
       code !== null &&
       code !== 0 &&
       !ignoredOnFailureHooks.includes(hookName) &&
       onHookFailure
-        ? (await onHookFailure(
-            hookName,
-            Buffer.concat(terminalOutput).toString()
-          )) === 'ignore'
+        ? (await onHookFailure(hookName, terminalOutput)) === 'ignore'
         : false
 
     if (ignoreError) {
