@@ -19,6 +19,7 @@ GitHub Desktop has been developed for many years through many iterations of tech
 ### TypeScript Style
 
 - Avoid creating new classes unless necessary; prefer functions and interfaces/types, sticking to more idiomatic TypeScript/JavaScript patterns.
+- Avoid using enums; prefer union types of string literals instead.
 - **Use strict TypeScript** with all strict mode checks enabled
 - **Naming conventions**:
   - PascalCase for classes
