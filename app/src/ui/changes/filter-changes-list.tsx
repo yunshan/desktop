@@ -159,7 +159,7 @@ interface IFilterChangesListProps {
   readonly availableWidth: number
   readonly isCommitting: boolean
   readonly hookProgress: HookProgress | null
-  readonly onShowCommitProgress?: () => void
+  readonly onShowCommitProgress?: (() => void) | undefined
   readonly isGeneratingCommitMessage: boolean
   readonly shouldShowGenerateCommitMessageCallOut: boolean
   readonly commitToAmend: Commit | null
