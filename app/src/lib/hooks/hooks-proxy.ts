@@ -6,6 +6,8 @@ import { ProcessProxyConnection as Connection } from 'process-proxy'
 import { pipeline } from 'stream/promises'
 import type { HookProgress, TerminalOutput } from '../git'
 import { resolveGitBinary } from 'dugite'
+import { ShellEnvResult } from './get-shell-env'
+import { shellFriendlyNames } from './config'
 
 const hooksUsingStdin = ['post-rewrite']
 const ignoredOnFailureHooks = [
@@ -43,15 +45,16 @@ const debug = (message: string, error?: Error) => {
 }
 
 const exitWithMessage = (conn: Connection, msg: string, exitCode = 0) => {
-  return new Promise<void>(resolve => {
-    conn.stderr.end(`${msg}\n`)
-    conn.exit(exitCode).then(resolve, err => {
-      debug(
-        `failed to exit proxy: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      )
-      resolve()
+  return new Promise<void>(async resolve => {
+    conn.stderr.write(`${msg}\n`, () => {
+      conn.exit(exitCode).then(resolve, err => {
+        debug(
+          `failed to exit proxy: ${
+            err instanceof Error ? err.message : String(err)
+          }`
+        )
+        resolve()
+      })
     })
   })
 }
@@ -61,7 +64,7 @@ const exitWithError = (conn: Connection, msg: string, exitCode = 1) =>
 
 export const createHooksProxy = (
   tmpDir: string,
-  getShellEnv: () => Promise<Record<string, string | undefined>>,
+  getShellEnv: (cwd: string) => Promise<ShellEnvResult>,
   onHookProgress?: (progress: HookProgress) => void,
   onHookFailure?: (
     hookName: string,
@@ -117,7 +120,25 @@ export const createHooksProxy = (
 
     const terminalOutput: Buffer[] = []
     const gitPath = resolveGitBinary(resolve(__dirname, 'git'))
-    const shellEnv = await getShellEnv()
+    const shellEnv = await getShellEnv(proxyCwd)
+
+    if (shellEnv.kind === 'failure') {
+      let errMsg = `Failed to load shell environment for hook ${hookName}.`
+      debug(errMsg)
+
+      if (shellEnv.shellKind) {
+        const friendlyName = shellFriendlyNames[shellEnv.shellKind]
+        if (shellEnv.shellKind === 'git-bash') {
+          errMsg += `\n${friendlyName} not found. Please ensure Git for Windows is installed and added to your PATH.`
+        } else {
+          errMsg += `\n${friendlyName} not found. Please ensure it's installed and added to your PATH.`
+        }
+      }
+
+      errMsg += '\n\nConfigure the shell to use in Preferences > Git > Hooks.'
+
+      return exitWithError(conn, errMsg)
+    }
 
     const { code, signal } = await new Promise<{
       code: number | null
@@ -127,7 +148,7 @@ export const createHooksProxy = (
 
       const child = spawn(gitPath, args, {
         cwd: proxyCwd,
-        env: { ...shellEnv, ...safeEnv },
+        env: { ...shellEnv.env, ...safeEnv },
         signal: abortController.signal,
       })
         .on('close', (code, signal) => resolve({ code, signal }))

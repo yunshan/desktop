@@ -8,7 +8,23 @@ import { getRepoHooks } from './get-repo-hooks'
 import { createHooksProxy } from './hooks-proxy'
 import { getShellEnv } from './get-shell-env'
 import memoizeOne from 'memoize-one'
-import { getGitHookEnvShell, getHooksEnvEnabled } from './config'
+import {
+  getCacheHooksEnv,
+  getGitHookEnvShell,
+  getHooksEnvEnabled,
+  SupportedHooksEnvShell,
+} from './config'
+
+const memoizedGetShellEnv = memoizeOne(
+  async (shellKind: SupportedHooksEnvShell, cwd: string, cacheKey: string) => {
+    const shellEnvStartTime = Date.now()
+    const shellEnv = await getShellEnv(cwd, shellKind)
+    log.debug(
+      `hooks: loaded shell environment in ${Date.now() - shellEnvStartTime}ms`
+    )
+    return shellEnv
+  }
+)
 
 export async function withHooksEnv<T>(
   fn: (env: Record<string, string | undefined> | undefined) => Promise<T>,
@@ -25,15 +41,6 @@ export async function withHooksEnv<T>(
     return fn(opts?.env)
   }
 
-  const memoizedGetShellEnv = memoizeOne(async () => {
-    const shellEnvStartTime = Date.now()
-    const shellEnv = await getShellEnv(getGitHookEnvShell())
-    log.debug(
-      `hooks: loaded shell environment in ${Date.now() - shellEnvStartTime}ms`
-    )
-    return shellEnv
-  })
-
   const ext = __WIN32__ ? '.exe' : ''
   const processProxyPath = join(__dirname, `process-proxy${ext}`)
 
@@ -41,7 +48,15 @@ export async function withHooksEnv<T>(
   const tmpHooksDir = await mkdtemp(join(tmpdir(), 'desktop-git-hooks-'))
   const hooksProxy = createHooksProxy(
     tmpHooksDir,
-    memoizedGetShellEnv,
+    cwd =>
+      memoizedGetShellEnv(
+        getGitHookEnvShell(),
+        cwd,
+        // We always cache environment per token (i.e. per operation, e.g commit, apply, etc)
+        // but we can optionally cache it over multiple operations in the same repository if the user
+        // has enabled that setting.
+        getCacheHooksEnv() ? 'global' : token
+      ),
     opts?.onHookProgress,
     opts?.onHookFailure
   )
