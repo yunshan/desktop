@@ -87,7 +87,7 @@ const findWindowsShell = async (
   shellKind: SupportedHooksEnvShell = 'cmd'
 ): Promise<Shell | undefined> => {
   switch (shellKind) {
-    case 'g4w-bash':
+    case 'git-bash':
       return findGitBashShell()
     case 'powershell':
     case 'pwsh':

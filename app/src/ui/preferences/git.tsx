@@ -6,9 +6,12 @@ import { LinkButton } from '../lib/link-button'
 import { Account } from '../../models/account'
 import { GitConfigUserForm } from '../lib/git-config-user-form'
 import { TabBar } from '../tab-bar'
-import { ISegmentedItem } from '../lib/vertical-segmented-control'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
 import { Select } from '../lib/select'
+import {
+  shellFriendlyNames,
+  SupportedHooksEnvShell,
+} from '../../lib/hooks/config'
 
 interface IGitProps {
   readonly name: string
@@ -36,23 +39,11 @@ interface IGitProps {
   readonly selectedShell: string
 }
 
-const windowsShells: ReadonlyArray<ISegmentedItem<string>> = [
-  {
-    key: 'g4w-bash',
-    title: 'Git Bash (Git for Windows)',
-  },
-  {
-    key: 'pwsh',
-    title: 'PowerShell Core',
-  },
-  {
-    key: 'powershell',
-    title: 'PowerShell Desktop',
-  },
-  {
-    key: 'cmd',
-    title: 'Command Prompt',
-  },
+const windowsShells: ReadonlyArray<SupportedHooksEnvShell> = [
+  'git-bash',
+  'pwsh',
+  'powershell',
+  'cmd',
 ]
 
 export class Git extends React.Component<IGitProps> {
@@ -85,6 +76,14 @@ export class Git extends React.Component<IGitProps> {
   private renderHooksSettings() {
     return (
       <>
+        <div className="hooks-warning">
+          GitHub Desktop hook support is experimental and currently only
+          supports hooks related to committing. Please{' '}
+          <LinkButton uri="https://github.com/desktop/desktop/issues/new/choose">
+            let us know
+          </LinkButton>{' '}
+          if you encounter any issues or have feedback!
+        </div>
         <Checkbox
           label="Load Git hook environment variables from shell"
           ariaDescribedBy="git-hooks-env-description"
@@ -109,11 +108,13 @@ export class Git extends React.Component<IGitProps> {
               value={this.props.selectedShell}
               onChange={this.onSelectedShellChanged}
             >
-              {windowsShells.map(s => (
-                <option key={s.key} value={s.key}>
-                  {s.title}
-                </option>
-              ))}
+              {windowsShells
+                .map(s => ({ key: s, title: shellFriendlyNames[s] }))
+                .map(s => (
+                  <option key={s.key} value={s.key}>
+                    {s.title}
+                  </option>
+                ))}
             </Select>
           </>
         )}

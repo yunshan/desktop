@@ -20,11 +20,11 @@ export const getCacheHooksEnv = () =>
 export const setCacheHooksEnv = (enabled: boolean): void =>
   setBoolean('git-cache-hooks-env', enabled)
 
-export const defaultGitHookEnvShell: SupportedHooksEnvShell = 'cmd'
+export const defaultGitHookEnvShell: SupportedHooksEnvShell = 'git-bash'
 export const getGitHookEnvShell = (): SupportedHooksEnvShell => {
   const shell = localStorage.getItem('git-hook-env-shell')
   if (
-    shell === 'g4w-bash' ||
+    shell === 'git-bash' ||
     shell === 'pwsh' ||
     shell === 'powershell' ||
     shell === 'cmd'
@@ -34,7 +34,16 @@ export const getGitHookEnvShell = (): SupportedHooksEnvShell => {
   return defaultGitHookEnvShell
 }
 
+export const shellFriendlyNames: Readonly<
+  Record<SupportedHooksEnvShell, string>
+> = {
+  'git-bash': 'Git Bash',
+  pwsh: 'PowerShell Core',
+  powershell: 'Windows PowerShell',
+  cmd: 'Command Prompt',
+}
+
 export const setGitHookEnvShell = (shell: string) =>
   localStorage.setItem('git-hook-env-shell', shell)
 
-export type SupportedHooksEnvShell = 'g4w-bash' | 'pwsh' | 'powershell' | 'cmd'
+export type SupportedHooksEnvShell = 'git-bash' | 'pwsh' | 'powershell' | 'cmd'

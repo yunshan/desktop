@@ -48,6 +48,7 @@ import {
   isValidCustomIntegration,
 } from '../../lib/custom-integration'
 import {
+  defaultGitHookEnvShell,
   getCacheHooksEnv,
   getGitHookEnvShell,
   getHooksEnvEnabled,
@@ -493,7 +494,9 @@ export class Preferences extends React.Component<
               onSelectedShellChanged={this.onSelectedGitHookEnvShellChanged}
               enableGitHookEnv={this.state.enableGitHookEnv ?? false}
               cacheGitHookEnv={this.state.cacheGitHookEnv ?? true}
-              selectedShell={this.state.selectedGitHookEnvShell ?? 'g4w-bash'}
+              selectedShell={
+                this.state.selectedGitHookEnvShell ?? defaultGitHookEnvShell
+              }
             />
           </>
         )
