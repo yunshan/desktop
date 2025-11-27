@@ -599,6 +599,8 @@ export interface IRepositoryState {
   readonly skipCommitHooks: boolean
 }
 
+export type CommitOptions = Pick<IRepositoryState, 'skipCommitHooks'>
+
 export interface IBranchesState {
   /**
    * The current tip of HEAD, either a branch, a commit (if HEAD is

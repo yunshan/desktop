@@ -127,6 +127,7 @@ import {
   IMultiCommitOperationState,
   IConstrainedValue,
   ICompareState,
+  CommitOptions,
 } from '../app-state'
 import {
   findEditorOrDefault,
@@ -3893,11 +3894,11 @@ export class AppStore extends TypedBaseStore<IAppState> {
     this.emitUpdate()
   }
 
-  public _updateSkipCommitHooks(
+  public _updateCommitOptions(
     repository: Repository,
-    skipCommitHooks: boolean
+    commitOptions: CommitOptions
   ): void {
-    this.repositoryStateCache.update(repository, () => ({ skipCommitHooks }))
+    this.repositoryStateCache.update(repository, () => commitOptions)
     this.emitUpdate()
   }
 

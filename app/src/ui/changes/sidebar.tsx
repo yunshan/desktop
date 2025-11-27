@@ -8,6 +8,7 @@ import {
   RebaseConflictState,
   isRebaseConflictState,
   ChangesSelectionKind,
+  CommitOptions,
 } from '../../lib/app-state'
 import { Repository } from '../../models/repository'
 import { Dispatcher } from '../dispatcher'
@@ -99,9 +100,9 @@ interface IChangesSidebarProps {
 
   readonly hasCommitHooks: boolean
   readonly skipCommitHooks: boolean
-  readonly onSkipCommitHooksChanged: (
+  readonly onUpdateCommitOptions: (
     repository: Repository,
-    skipCommitHooks: boolean
+    options: CommitOptions
   ) => void
 }
 
@@ -475,7 +476,7 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
           showChangesFilter={this.props.showChangesFilter}
           hasCommitHooks={this.props.hasCommitHooks}
           skipCommitHooks={this.props.skipCommitHooks}
-          onSkipCommitHooksChanged={this.props.onSkipCommitHooksChanged}
+          onUpdateCommitOptions={this.props.onUpdateCommitOptions}
         />
         {this.renderUndoCommit(rebaseConflictState)}
       </div>

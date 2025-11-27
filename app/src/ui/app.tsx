@@ -8,6 +8,7 @@ import {
   FoldoutType,
   SelectionType,
   HistoryTabMode,
+  CommitOptions,
 } from '../lib/app-state'
 import { Dispatcher } from './dispatcher'
 import { AppStore, GitHubUserStore, IssuesStore } from '../lib/stores'
@@ -2180,7 +2181,7 @@ export class App extends React.Component<IAppProps, IAppState> {
             accounts={this.state.accounts}
             hasCommitHooks={repositoryState.hasCommitHooks}
             skipCommitHooks={repositoryState.skipCommitHooks}
-            onSkipCommitHooksChanged={this.onSkipCommitHooksChanged}
+            onUpdateCommitOptions={this.onUpdateCommitOptions}
           />
         )
       case PopupType.MultiCommitOperation: {
@@ -2605,11 +2606,11 @@ export class App extends React.Component<IAppProps, IAppState> {
     }
   }
 
-  private onSkipCommitHooksChanged = (
+  private onUpdateCommitOptions = (
     repository: Repository,
-    skipCommitHooks: boolean
+    options: CommitOptions
   ) => {
-    this.props.dispatcher.updateSkipCommitHooks(repository, skipCommitHooks)
+    this.props.dispatcher.updateCommitOptions(repository, options)
   }
 
   private onSecretDelegatedBypassLinkClick = () => {
@@ -3465,7 +3466,7 @@ export class App extends React.Component<IAppProps, IAppState> {
           }
           hasCommitHooks={selectedState.state.hasCommitHooks}
           skipCommitHooks={selectedState.state.skipCommitHooks}
-          onSkipCommitHooksChanged={this.onSkipCommitHooksChanged}
+          onUpdateCommitOptions={this.onUpdateCommitOptions}
         />
       )
     } else if (selectedState.type === SelectionType.CloningRepository) {

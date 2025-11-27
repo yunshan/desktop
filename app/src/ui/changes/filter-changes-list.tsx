@@ -20,7 +20,7 @@ import {
 import { Account } from '../../models/account'
 import { Author, UnknownAuthor } from '../../models/author'
 import { Checkbox, CheckboxValue } from '../lib/checkbox'
-import { IFileListFilterState } from '../../lib/app-state'
+import { CommitOptions, IFileListFilterState } from '../../lib/app-state'
 import {
   isSafeFileExtension,
   DefaultEditorLabel,
@@ -225,9 +225,9 @@ interface IFilterChangesListProps {
 
   readonly hasCommitHooks: boolean
   readonly skipCommitHooks: boolean
-  readonly onSkipCommitHooksChanged: (
+  readonly onUpdateCommitOptions: (
     repository: Repository,
-    skipCommitHooks: boolean
+    options: CommitOptions
   ) => void
 }
 
@@ -994,7 +994,7 @@ export class FilterChangesList extends React.Component<
         submitButtonAriaDescribedBy={'hidden-changes-warning'}
         hasCommitHooks={this.props.hasCommitHooks}
         skipCommitHooks={this.props.skipCommitHooks}
-        onSkipCommitHooksChanged={this.props.onSkipCommitHooksChanged}
+        onUpdateCommitOptions={this.props.onUpdateCommitOptions}
       />
     )
   }

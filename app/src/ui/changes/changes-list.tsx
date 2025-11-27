@@ -42,6 +42,7 @@ import {
   RebaseConflictState,
   ConflictState,
   Foldout,
+  CommitOptions,
 } from '../../lib/app-state'
 import { ContinueRebase } from './continue-rebase'
 import { Octicon, OcticonSymbolVariant } from '../octicons'
@@ -236,9 +237,9 @@ interface IChangesListProps {
 
   readonly hasCommitHooks: boolean
   readonly skipCommitHooks: boolean
-  readonly onSkipCommitHooksChanged: (
+  readonly onUpdateCommitOptions: (
     repository: Repository,
-    skipCommitHooks: boolean
+    options: CommitOptions
   ) => void
 }
 
@@ -889,7 +890,7 @@ export class ChangesList extends React.Component<
         accounts={this.props.accounts}
         hasCommitHooks={this.props.hasCommitHooks}
         skipCommitHooks={this.props.skipCommitHooks}
-        onSkipCommitHooksChanged={this.props.onSkipCommitHooksChanged}
+        onUpdateCommitOptions={this.props.onUpdateCommitOptions}
       />
     )
   }

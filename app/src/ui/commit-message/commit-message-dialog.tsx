@@ -13,7 +13,7 @@ import { Author, UnknownAuthor } from '../../models/author'
 import { CommitMessage } from '../changes/commit-message'
 import noop from 'lodash/noop'
 import { Popup } from '../../models/popup'
-import { Foldout } from '../../lib/app-state'
+import { CommitOptions, Foldout } from '../../lib/app-state'
 import { Account } from '../../models/account'
 import { RepoRulesInfo } from '../../models/repo-rules'
 import { IAheadBehind } from '../../models/branch'
@@ -98,9 +98,9 @@ interface ICommitMessageDialogProps {
 
   readonly hasCommitHooks: boolean
   readonly skipCommitHooks: boolean
-  readonly onSkipCommitHooksChanged: (
+  readonly onUpdateCommitOptions: (
     repository: Repository,
-    skipCommitHooks: boolean
+    options: CommitOptions
   ) => void
 }
 
@@ -176,7 +176,7 @@ export class CommitMessageDialog extends React.Component<
             onShowCommitProgress={undefined}
             hasCommitHooks={this.props.hasCommitHooks}
             skipCommitHooks={this.props.skipCommitHooks}
-            onSkipCommitHooksChanged={this.props.onSkipCommitHooksChanged}
+            onUpdateCommitOptions={this.props.onUpdateCommitOptions}
           />
         </DialogContent>
       </Dialog>

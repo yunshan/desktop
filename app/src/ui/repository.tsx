@@ -15,6 +15,7 @@ import {
   RepositorySectionTab,
   ChangesSelectionKind,
   IConstrainedValue,
+  CommitOptions,
 } from '../lib/app-state'
 import { Dispatcher } from './dispatcher'
 import { IssuesStore, GitHubUserStore } from '../lib/stores'
@@ -117,9 +118,9 @@ interface IRepositoryViewProps {
 
   readonly hasCommitHooks: boolean
   readonly skipCommitHooks: boolean
-  readonly onSkipCommitHooksChanged: (
+  readonly onUpdateCommitOptions: (
     repository: Repository,
-    skipCommitHooks: boolean
+    options: CommitOptions
   ) => void
 }
 
@@ -302,7 +303,7 @@ export class RepositoryView extends React.Component<
         showChangesFilter={this.props.showChangesFilter}
         hasCommitHooks={this.props.hasCommitHooks}
         skipCommitHooks={this.props.skipCommitHooks}
-        onSkipCommitHooksChanged={this.props.onSkipCommitHooksChanged}
+        onUpdateCommitOptions={this.props.onUpdateCommitOptions}
       />
     )
   }

@@ -24,7 +24,7 @@ import { Commit, ICommitContext } from '../../models/commit'
 import { startTimer } from '../lib/timing'
 import { CommitWarning, CommitWarningIcon } from './commit-warning'
 import { LinkButton } from '../lib/link-button'
-import { Foldout, FoldoutType } from '../../lib/app-state'
+import { CommitOptions, Foldout, FoldoutType } from '../../lib/app-state'
 import { IAvatarUser, getAvatarUserFromAuthor } from '../../models/avatar'
 import { showContextualMenu } from '../../lib/menu-item'
 import { Account, isEnterpriseAccount } from '../../models/account'
@@ -204,9 +204,9 @@ interface ICommitMessageProps {
 
   readonly hasCommitHooks: boolean
   readonly skipCommitHooks: boolean
-  readonly onSkipCommitHooksChanged: (
+  readonly onUpdateCommitOptions: (
     repository: Repository,
-    skipCommitHooks: boolean
+    options: CommitOptions
   ) => void
 }
 
@@ -1037,13 +1037,12 @@ export class CommitMessage extends React.Component<
         type: 'checkbox',
         checked: this.props.skipCommitHooks,
         label: __DARWIN__
-          ? 'Bypass Hooks (--no-verify)'
-          : 'Bypass hooks (--no-verify)',
+          ? 'Bypass Commit Hooks (--no-verify)'
+          : 'Bypass commit hooks (--no-verify)',
         action: () => {
-          this.props.onSkipCommitHooksChanged(
-            this.props.repository,
-            !this.props.skipCommitHooks
-          )
+          this.props.onUpdateCommitOptions(this.props.repository, {
+            skipCommitHooks: !this.props.skipCommitHooks,
+          })
         },
       },
     ])
