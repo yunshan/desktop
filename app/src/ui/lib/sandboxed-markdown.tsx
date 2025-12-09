@@ -54,6 +54,10 @@ interface ISandboxedMarkdownState {
   readonly tooltipOffset?: DOMRect
 }
 
+function once<T extends Node>(node: T, event: string, fn: (e: Event) => void) {
+  node.addEventListener(event, fn, { once: true })
+}
+
 /**
  * Parses and sanitizes markdown into html and outputs it inside a sandboxed
  * iframe.
@@ -64,15 +68,7 @@ export class SandboxedMarkdown extends React.PureComponent<
 > {
   private frameRef: HTMLIFrameElement | null = null
   private frameContainingDivRef: HTMLDivElement | null = null
-  private contentDivRef: HTMLDivElement | null = null
   private markdownEmitter?: MarkdownEmitter
-
-  /**
-   * Resize observer used for tracking height changes in the markdown
-   * content and update the size of the iframe container.
-   */
-  private readonly resizeObserver: ResizeObserver
-  private resizeDebounceId: number | null = null
 
   private onDocumentScroll = debounce(() => {
     if (this.frameRef == null) {
@@ -95,31 +91,49 @@ export class SandboxedMarkdown extends React.PureComponent<
     { leading: true }
   )
 
+  private lastContainerHeight = -Infinity
+
   public constructor(props: ISandboxedMarkdownProps) {
     super(props)
 
-    this.resizeObserver = new ResizeObserver(this.scheduleResizeEvent)
     this.state = { tooltipElements: [] }
   }
 
-  private scheduleResizeEvent = () => {
-    if (this.resizeDebounceId !== null) {
-      cancelAnimationFrame(this.resizeDebounceId)
-      this.resizeDebounceId = null
-    }
-    this.resizeDebounceId = requestAnimationFrame(this.onContentResized)
-  }
-
-  private onContentResized = () => {
-    if (this.frameRef === null) {
+  /**
+   * Iframes without much styling help will act like a block element that has a
+   * predetermiend height and width and scrolling. We want our iframe to feel a
+   * bit more like a div. Thus, we want to capture the scroll height, and set
+   * the container div to that height and with some additional css we can
+   * achieve a inline feel.
+   */
+  private refreshHeight = () => {
+    if (this.frameRef === null || this.frameContainingDivRef === null) {
       return
     }
 
-    this.setFrameContainerHeight(this.frameRef)
+    const newHeight =
+      this.frameRef.contentDocument?.body?.firstElementChild?.clientHeight ??
+      400
+
+    if (newHeight !== this.lastContainerHeight) {
+      this.lastContainerHeight = newHeight
+      // Not sure why the content height != body height exactly. But we need to
+      // set the height explicitly to prevent scrollbar/content cut off.
+      // HACK: Add 1 to the new height to avoid UI glitches like the one shown
+      // in https://github.com/desktop/desktop/pull/18596
+      this.frameContainingDivRef.style.height = `${newHeight + 1}px`
+    }
   }
 
   private onFrameRef = (frameRef: HTMLIFrameElement | null) => {
     this.frameRef = frameRef
+    this.frameRef?.addEventListener('error', e => {
+      console.error(
+        'Error loading iframe contents. This may be due to a CSP violation.'
+      )
+      e.preventDefault()
+      e.stopPropagation()
+    })
   }
 
   private onFrameContainingDivRef = (
@@ -168,7 +182,6 @@ export class SandboxedMarkdown extends React.PureComponent<
 
   public componentWillUnmount() {
     this.markdownEmitter?.dispose()
-    this.resizeObserver.disconnect()
     document.removeEventListener('scroll', this.onDocumentScroll)
   }
 
@@ -218,6 +231,11 @@ export class SandboxedMarkdown extends React.PureComponent<
       .markdown-body a {
         text-decoration: ${this.props.underlineLinks ? 'underline' : 'inherit'};
       }
+
+      img {
+        max-width: 100%;
+        height: auto;
+      }
     </style>`
   }
 
@@ -226,11 +244,28 @@ export class SandboxedMarkdown extends React.PureComponent<
    * However, we want to intercept them an verify they are valid links first.
    */
   private setupFrameLoadListeners(frameRef: HTMLIFrameElement): void {
+    const doc = frameRef.contentDocument
+    if (doc) {
+      once(doc, 'DOMContentLoaded', () => {
+        this.refreshHeight()
+
+        Array.from(doc.querySelectorAll('img')).forEach(img =>
+          once(img, 'load', this.refreshHeight)
+        )
+
+        Array.from(doc.querySelectorAll('details')).forEach(detail =>
+          detail.addEventListener('toggle', this.refreshHeight)
+        )
+
+        this.setupLinkInterceptor(frameRef)
+        this.setupTooltips(frameRef)
+
+        this.props.onMarkdownParsed?.()
+      })
+    }
+
     frameRef.addEventListener('load', () => {
-      this.setupContentDivRef(frameRef)
-      this.setupLinkInterceptor(frameRef)
-      this.setupTooltips(frameRef)
-      this.setFrameContainerHeight(frameRef)
+      this.refreshHeight()
     })
   }
 
@@ -253,52 +288,6 @@ export class SandboxedMarkdown extends React.PureComponent<
       tooltipElements,
       tooltipOffset: frameRef.getBoundingClientRect(),
     })
-  }
-
-  private setupContentDivRef(frameRef: HTMLIFrameElement): void {
-    if (frameRef.contentDocument === null) {
-      return
-    }
-
-    /*
-     * We added an additional wrapper div#content around the markdown to
-     * determine a more accurate scroll height as the iframe's document or body
-     * element was not adjusting it's height dynamically when new content was
-     * provided.
-     */
-    this.contentDivRef = frameRef.contentDocument.documentElement.querySelector(
-      '#content'
-    ) as HTMLDivElement
-
-    if (this.contentDivRef !== null) {
-      this.resizeObserver.disconnect()
-      this.resizeObserver.observe(this.contentDivRef)
-    }
-  }
-
-  /**
-   * Iframes without much styling help will act like a block element that has a
-   * predetermiend height and width and scrolling. We want our iframe to feel a
-   * bit more like a div. Thus, we want to capture the scroll height, and set
-   * the container div to that height and with some additional css we can
-   * achieve a inline feel.
-   */
-  private setFrameContainerHeight(frameRef: HTMLIFrameElement): void {
-    if (
-      frameRef.contentDocument === null ||
-      this.frameContainingDivRef === null ||
-      this.contentDivRef === null
-    ) {
-      return
-    }
-
-    // Not sure why the content height != body height exactly. But we need to
-    // set the height explicitly to prevent scrollbar/content cut off.
-    // HACK: Add 1 to the new height to avoid UI glitches like the one shown
-    // in https://github.com/desktop/desktop/pull/18596
-    const divHeight = this.contentDivRef.clientHeight
-    this.frameContainingDivRef.style.height = `${divHeight + 1}px`
-    this.props.onMarkdownParsed?.()
   }
 
   /**
@@ -363,21 +352,30 @@ export class SandboxedMarkdown extends React.PureComponent<
     // convert non-latin strings that existed in the markedjs.
     const b64src = Buffer.from(src, 'utf8').toString('base64')
 
-    // HACK OR NOT? This prevents a crash since Electron 34 where the layout
-    // changes during the ResizeObserver callback. See:
-    // https://github.com/desktop/desktop/issues/20760
-    requestAnimationFrame(() => {
-      if (this.frameRef === null) {
-        // If frame is destroyed before markdown parsing completes, frameref will be null.
+    if (this.frameRef === null) {
+      // If frame is destroyed before markdown parsing completes, frameref will be null.
+      return
+    }
+
+    // We are using `src` and data uri as opposed to an html string in the
+    // `srcdoc` property because the `srcdoc` property renders the html in the
+    // parent dom and we want all rendering to be isolated to our sandboxed iframe.
+    // -- https://csplite.com/csp/test188/
+    const oldDocument = this.frameRef.contentDocument
+    this.frameRef.src = `data:text/html;charset=utf-8;base64,${b64src}`
+
+    const waitForNewDocument = () => {
+      if (!this.frameRef) {
         return
       }
+      if (this.frameRef.contentDocument === oldDocument) {
+        requestAnimationFrame(waitForNewDocument)
+      } else {
+        this.refreshHeight()
+      }
+    }
 
-      // We are using `src` and data uri as opposed to an html string in the
-      // `srcdoc` property because the `srcdoc` property renders the html in the
-      // parent dom and we want all rendering to be isolated to our sandboxed iframe.
-      // -- https://csplite.com/csp/test188/
-      this.frameRef.src = `data:text/html;charset=utf-8;base64,${b64src}`
-    })
+    requestAnimationFrame(waitForNewDocument)
   }
 
   public render() {
@@ -391,7 +389,7 @@ export class SandboxedMarkdown extends React.PureComponent<
         <iframe
           title="sandboxed-markdown-component"
           className="sandboxed-markdown-component"
-          sandbox="allow-same-origin"
+          sandbox=""
           ref={this.onFrameRef}
           aria-label={this.props.ariaLabel}
         />
