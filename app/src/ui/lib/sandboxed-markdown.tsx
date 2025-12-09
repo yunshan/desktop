@@ -75,6 +75,9 @@ export class SandboxedMarkdown extends React.PureComponent<
   private resizeDebounceId: number | null = null
 
   private onDocumentScroll = debounce(() => {
+    if (this.frameRef == null) {
+      return
+    }
     this.setState({
       tooltipOffset: this.frameRef?.getBoundingClientRect() ?? new DOMRect(),
     })
