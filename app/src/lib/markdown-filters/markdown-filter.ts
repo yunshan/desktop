@@ -24,8 +24,10 @@ export class MarkdownEmitter extends Emitter {
   }
 
   public emit(value: string): void {
-    this.markdown = value
-    super.emit('markdown', value)
+    if (value !== this.markdown) {
+      this.markdown = value
+      super.emit('markdown', value)
+    }
   }
 
   public get latestMarkdown() {
