@@ -112,19 +112,10 @@ export class SandboxedMarkdown extends React.PureComponent<
 
   private onFrameRef = (frameRef: HTMLIFrameElement | null) => {
     this.frameRef = frameRef
-    this.frameRef?.addEventListener('error', e => {
-      console.error(
-        'Error loading iframe contents. This may be due to a CSP violation.'
-      )
-      e.preventDefault()
-      e.stopPropagation()
-    })
   }
 
   public async componentDidMount() {
     this.renderMarkdown()
-
-    this.frameRef?.addEventListener('load', this.refreshHeight, { once: true })
 
     document.addEventListener('scroll', this.onDocumentScroll, {
       capture: true,
@@ -399,6 +390,7 @@ export class SandboxedMarkdown extends React.PureComponent<
           className="sandboxed-markdown-component"
           sandbox="allow-same-origin"
           ref={this.onFrameRef}
+          onLoad={this.refreshHeight}
           aria-label={this.props.ariaLabel}
         />
         {tooltipElements.map(e => (
