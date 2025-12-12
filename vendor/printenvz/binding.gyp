@@ -7,11 +7,27 @@
         "src/printenvz.c"
       ],
       "include_dirs": [],
-      "cflags": ["-std=c99"],
+      'cflags': [
+          '-Wall',
+          '-Werror',
+          '-fPIC',
+          '-pie',
+          '-D_FORTIFY_SOURCE=1',
+          '-fstack-protector-strong',
+          '-Werror=format-security',
+          '-fno-exceptions'
+        ],
       "conditions": [
         ["OS=='mac'", {
           "xcode_settings": {
-            "OTHER_CFLAGS": ["-std=c99"],
+            "OTHER_CFLAGS": [
+              '-Wall',
+              '-Werror',
+              '-Werror=format-security',
+              '-fPIC',
+              '-D_FORTIFY_SOURCE=1',
+              '-fstack-protector-strong'
+            ],
             "MACOSX_DEPLOYMENT_TARGET": "10.7"
           }
         }]
