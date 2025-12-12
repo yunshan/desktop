@@ -3,6 +3,7 @@ const os = require('os');
 
 /**
  * Returns the path to the compiled native printenvz executable
+ * 
  * @returns {string} The absolute path to the printenvz executable
  */
 function getPrintenvzPath() {
