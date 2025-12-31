@@ -47,6 +47,7 @@
   &.filtered-changes-list {
     .filter-popover {
       text-align: right;
+      min-width: 200px;
 
       .filter-popover-header {
         display: flex;
