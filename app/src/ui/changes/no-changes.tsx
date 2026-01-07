@@ -343,6 +343,31 @@ export class NoChanges extends React.Component<
   private onOpenInExternalEditorClicked = () =>
     this.props.dispatcher.incrementMetric('suggestedStepOpenInExternalEditor')
 
+  private renderOpenWithExternalEditor() {
+    const itemId: MenuIDs = 'open-with-external-editor'
+    const menuItem = this.getMenuItemInfo(itemId)
+
+    if (menuItem === undefined) {
+      log.error(`Could not find matching menu item for ${itemId}`)
+      return null
+    }
+
+    const title = 'Open the repository in an other editor'
+    const description =
+      'Pick a different editor without changing your default preference.'
+
+    return (
+      <MenuBackedSuggestedAction
+        title={title}
+        description={description}
+        discoverabilityContent={this.renderDiscoverabilityElements(menuItem)}
+        menuItemId={itemId}
+        buttonText="Open With"
+        disabled={!menuItem.enabled}
+      />
+    )
+  }
+
   private renderRemoteAction() {
     const { remote, aheadBehind, branchesState, tagsToPush } =
       this.props.repositoryState
@@ -740,6 +765,7 @@ export class NoChanges extends React.Component<
         </SuggestedActionGroup>
         <SuggestedActionGroup>
           {this.renderOpenInExternalEditor()}
+          {this.renderOpenWithExternalEditor()}
           {this.renderShowInFileManager()}
           {this.renderViewOnGitHub()}
         </SuggestedActionGroup>

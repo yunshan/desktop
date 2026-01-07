@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { DialogContent } from '../dialog'
 import { LinkButton } from '../lib/link-button'
+import { Button } from '../lib/button'
 import { Row } from '../../ui/lib/row'
 import { Select } from '../lib/select'
 import { Shell, parse as parseShell } from '../../lib/shells'
@@ -20,6 +21,8 @@ interface IIntegrationsPreferencesProps {
   readonly customEditor: ICustomIntegration
   readonly useCustomShell: boolean
   readonly customShell: ICustomIntegration
+  readonly onOpenWithExternalEditor?: () => void
+  readonly currentRepositoryPath?: string | null
   readonly onSelectedEditorChanged: (editor: string) => void
   readonly onSelectedShellChanged: (shell: Shell) => void
   readonly onUseCustomEditorChanged: (useCustomEditor: boolean) => void
@@ -371,6 +374,18 @@ export class Integrations extends React.Component<
           <Row>{this.renderExternalEditor()}</Row>
           {this.state.useCustomEditor && this.renderCustomExternalEditor()}
           {this.renderNoExternalEditorHint()}
+          {this.props.currentRepositoryPath &&
+            this.props.onOpenWithExternalEditor && (
+              <Row>
+                <Button onClick={this.props.onOpenWithExternalEditor}>
+                  {__DARWIN__ ? 'Open With…' : 'Open with…'}
+                </Button>
+                <p className="git-settings-description">
+                  Open the current repository in a different editor without
+                  changing your default
+                </p>
+              </Row>
+            )}
         </fieldset>
         <fieldset>
           <legend>

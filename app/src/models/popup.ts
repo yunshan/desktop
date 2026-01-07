@@ -49,6 +49,7 @@ export enum PopupType {
   CLIInstalled = 'CLIInstalled',
   GenericGitAuthentication = 'GenericGitAuthentication',
   ExternalEditorFailed = 'ExternalEditorFailed',
+  OpenWithExternalEditor = 'OpenWithExternalEditor',
   OpenShellFailed = 'OpenShellFailed',
   InitializeLFS = 'InitializeLFS',
   LFSAttributeMismatch = 'LFSAttributeMismatch',
@@ -187,6 +188,7 @@ export type PopupDetail =
       onSubmit: (username: string, password: string) => void
       onDismiss: () => void
     }
+  | { type: PopupType.OpenWithExternalEditor }
   | {
       type: PopupType.ExternalEditorFailed
       message: string
