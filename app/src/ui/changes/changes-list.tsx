@@ -42,6 +42,7 @@ import {
   RebaseConflictState,
   ConflictState,
   Foldout,
+  CommitOptions,
 } from '../../lib/app-state'
 import { ContinueRebase } from './continue-rebase'
 import { Octicon, OcticonSymbolVariant } from '../octicons'
@@ -59,6 +60,7 @@ import { RepoRulesInfo } from '../../models/repo-rules'
 import { IAheadBehind } from '../../models/branch'
 import { StashDiffViewerId } from '../stashing'
 import { enableFilteredChangesList } from '../../lib/feature-flag'
+import { HookProgress } from '../../lib/git'
 
 const RowHeight = 29
 const StashIcon: OcticonSymbolVariant = {
@@ -174,6 +176,8 @@ interface IChangesListProps {
   readonly dispatcher: Dispatcher
   readonly availableWidth: number
   readonly isCommitting: boolean
+  readonly hookProgress: HookProgress | null
+  readonly onShowCommitProgress: (() => void) | undefined
   readonly isGeneratingCommitMessage: boolean
   readonly shouldShowGenerateCommitMessageCallOut: boolean
   readonly commitToAmend: Commit | null
@@ -230,6 +234,24 @@ interface IChangesListProps {
   readonly showCommitLengthWarning: boolean
 
   readonly accounts: ReadonlyArray<Account>
+
+  /**
+   * Whether there are any hooks in the repository that could be
+   * skipped during commit with the --no-verify flag
+   */
+  readonly hasCommitHooks: boolean
+
+  /**
+   * Whether or not to skip blocking commit hooks when creating commits
+   * by means of passing the `--no-verify` flag to git commit
+   */
+  readonly skipCommitHooks: boolean
+
+  /** Callback to set commit options for the given repository */
+  readonly onUpdateCommitOptions: (
+    repository: Repository,
+    options: CommitOptions
+  ) => void
 }
 
 interface IChangesState {
@@ -768,6 +790,7 @@ export class ChangesList extends React.Component<
       repositoryAccount,
       dispatcher,
       isCommitting,
+      hookProgress,
       isGeneratingCommitMessage,
       commitToAmend,
       currentBranchProtected,
@@ -839,6 +862,8 @@ export class ChangesList extends React.Component<
         focusCommitMessage={this.props.focusCommitMessage}
         autocompletionProviders={this.props.autocompletionProviders}
         isCommitting={isCommitting}
+        hookProgress={hookProgress}
+        onShowCommitProgress={this.props.onShowCommitProgress}
         isGeneratingCommitMessage={isGeneratingCommitMessage}
         shouldShowGenerateCommitMessageCallOut={
           shouldShowGenerateCommitMessageCallOut
@@ -874,6 +899,9 @@ export class ChangesList extends React.Component<
         onStopAmending={this.onStopAmending}
         onShowCreateForkDialog={this.onShowCreateForkDialog}
         accounts={this.props.accounts}
+        hasCommitHooks={this.props.hasCommitHooks}
+        skipCommitHooks={this.props.skipCommitHooks}
+        onUpdateCommitOptions={this.props.onUpdateCommitOptions}
       />
     )
   }

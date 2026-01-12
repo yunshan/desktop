@@ -22,6 +22,7 @@ import {
   CherryPickConflictState,
   MultiCommitOperationConflictState,
   IMultiCommitOperationState,
+  CommitOptions,
 } from '../../lib/app-state'
 import { assertNever, fatalError } from '../../lib/fatal-error'
 import {
@@ -219,6 +220,10 @@ export class Dispatcher {
     missing: boolean
   ): Promise<Repository> {
     return this.appStore._updateRepositoryMissing(repository, missing)
+  }
+
+  public updateCommitOptions(repository: Repository, options: CommitOptions) {
+    this.appStore._updateCommitOptions(repository, options)
   }
 
   /** Load the next batch of history for the repository. */

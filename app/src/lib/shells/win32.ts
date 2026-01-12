@@ -227,7 +227,7 @@ async function findHyper(): Promise<string | null> {
   return null
 }
 
-async function findGitBash(): Promise<string | null> {
+export async function findGitBash(): Promise<string | null> {
   const registryPath = enumerateValues(
     HKEY.HKEY_LOCAL_MACHINE,
     'SOFTWARE\\GitForWindows'

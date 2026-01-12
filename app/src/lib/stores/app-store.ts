@@ -127,6 +127,7 @@ import {
   IMultiCommitOperationState,
   IConstrainedValue,
   ICompareState,
+  CommitOptions,
 } from '../app-state'
 import {
   findEditorOrDefault,
@@ -349,6 +350,7 @@ import {
 } from '../custom-integration'
 import { updateStore } from '../../ui/lib/update-store'
 import { BypassReasonType } from '../../ui/secret-scanning/bypass-push-protection-dialog'
+import { getRepoHooks } from '../hooks/get-repo-hooks'
 
 const LastSelectedRepositoryIDKey = 'last-selected-repository-id'
 
@@ -3325,10 +3327,44 @@ export class AppStore extends TypedBaseStore<IAppState> {
     const gitStore = this.gitStoreCache.get(repository)
 
     return this.withIsCommitting(repository, async () => {
-      const result = await gitStore.performFailableOperation(async () => {
-        const message = await formatCommitMessage(repository, context)
-        return createCommit(repository, message, selectedFiles, context.amend)
-      })
+      const result = await gitStore.performFailableOperation(
+        async () => {
+          const message = await formatCommitMessage(repository, context)
+          let aborted = false
+          return createCommit(repository, message, selectedFiles, {
+            amend: context.amend,
+            onHookProgress: hookProgress => {
+              this.repositoryStateCache.update(repository, state => ({
+                ...state,
+                hookProgress,
+              }))
+              this.emitUpdate()
+            },
+            onHookFailure: (hookName, terminalOutput) =>
+              new Promise(resolve => {
+                this._showPopup({
+                  type: PopupType.HookFailed,
+                  hookName,
+                  terminalOutput,
+                  resolve: resolution => {
+                    if (resolution === 'abort') {
+                      aborted = true
+                    }
+                    resolve(resolution)
+                  },
+                })
+              }),
+            onTerminalOutputAvailable: subscribeToCommitOutput => {
+              this.repositoryStateCache.update(repository, state => ({
+                ...state,
+                subscribeToCommitOutput,
+              }))
+            },
+            skipCommitHooks: state.skipCommitHooks,
+          }).catch(err => (aborted ? undefined : Promise.reject(err)))
+        },
+        { gitContext: { kind: 'commit' }, repository }
+      )
 
       if (result !== undefined) {
         await this._recordCommitStats(
@@ -3625,6 +3661,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
       gitStore.updateLastFetched(),
       gitStore.loadStashEntries(),
       this._refreshAuthor(repository),
+      this._refreshHasCommitHooks(repository),
       refreshSectionPromise,
     ])
 
@@ -3878,6 +3915,25 @@ export class AppStore extends TypedBaseStore<IAppState> {
       commitAuthor,
     }))
     this.emitUpdate()
+  }
+
+  public _updateCommitOptions(
+    repository: Repository,
+    commitOptions: CommitOptions
+  ): void {
+    this.repositoryStateCache.update(repository, () => commitOptions)
+    this.emitUpdate()
+  }
+
+  private async _refreshHasCommitHooks(repository: Repository): Promise<void> {
+    const hooks = ['pre-commit', 'commit-msg']
+    // Break early if we find either one of the hooks
+    for await (const {} of getRepoHooks(repository.path, hooks)) {
+      const hasCommitHooks = true
+      this.repositoryStateCache.update(repository, () => ({ hasCommitHooks }))
+      this.emitUpdate()
+      return
+    }
   }
 
   /** This shouldn't be called directly. See `Dispatcher`. */
@@ -4804,6 +4860,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
 
     this.repositoryStateCache.update(repository, () => ({
       isCommitting: true,
+      hookProgress: null,
+      subscribeToCommitOutput: null,
     }))
     this.emitUpdate()
 
@@ -4812,6 +4870,8 @@ export class AppStore extends TypedBaseStore<IAppState> {
     } finally {
       this.repositoryStateCache.update(repository, () => ({
         isCommitting: false,
+        hookProgress: null,
+        subscribeToCommitOutput: null,
       }))
       this.emitUpdate()
     }

@@ -19,6 +19,7 @@
   "dependencies": {
     "@floating-ui/react-dom": "^2.1.2",
     "@github/alive-client": "^1.2.0",
+    "@xterm/xterm": "^5.5.0",
     "app-path": "^3.3.0",
     "byline": "^5.0.0",
     "chalk": "^2.3.0",
@@ -59,6 +60,7 @@
     "react-transition-group": "^4.4.1",
     "react-virtualized": "^9.20.0",
     "registry-js": "^1.16.0",
+    "shescape": "^2.1.6",
     "source-map-support": "^0.4.15",
     "split2": "^4.2.0",
     "string-argv": "^0.3.2",
@@ -68,6 +70,7 @@
     "tslib": "^2.0.0",
     "untildify": "^3.0.2",
     "uuid": "^3.0.1",
+    "which": "^5.0.0",
     "windows-argv-parser": "file:../vendor/windows-argv-parser",
     "winston": "^3.6.0"
   },
