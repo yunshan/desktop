@@ -1478,6 +1478,21 @@ export class Dispatcher {
   }
 
   /**
+   * Opens a path in a selected external editor without changing preferences.
+   */
+  public async openInSelectedExternalEditor(
+    fullPath: string,
+    selectedEditor: string | null,
+    customEditor: ICustomIntegration | null
+  ): Promise<void> {
+    return this.appStore._openInSelectedExternalEditor(
+      fullPath,
+      selectedEditor,
+      customEditor
+    )
+  }
+
+  /**
    * Persist the given content to the repository's root .gitignore.
    *
    * If the repository root doesn't contain a .gitignore file one

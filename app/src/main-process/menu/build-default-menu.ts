@@ -365,6 +365,12 @@ export function buildDefaultMenu({
         accelerator: 'CmdOrCtrl+Shift+A',
         click: emit('open-external-editor'),
       },
+      {
+        label: __DARWIN__ ? 'Open With…' : 'Open &with…',
+        id: 'open-with-external-editor',
+        accelerator: 'CmdOrCtrl+Shift+Alt+A',
+        click: emit('open-with-external-editor'),
+      },
       separator,
       {
         id: 'create-issue-in-repository-on-github',

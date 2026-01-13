@@ -5983,6 +5983,39 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
   }
 
+  /** Open a path using a selected editor without changing preferences. */
+  public async _openInSelectedExternalEditor(
+    fullPath: string,
+    selectedEditor: string | null,
+    customEditor: ICustomIntegration | null
+  ): Promise<void> {
+    try {
+      if (customEditor && customEditor.path) {
+        await launchCustomExternalEditor(fullPath, customEditor)
+        return
+      }
+
+      if (!selectedEditor) {
+        return
+      }
+
+      const match = await findEditorOrDefault(selectedEditor)
+      if (match === null) {
+        this.emitError(
+          new ExternalEditorError(
+            `No suitable editors installed for GitHub Desktop to launch. Install ${suggestedExternalEditor.name} for your platform and restart GitHub Desktop to try again.`,
+            { suggestDefaultEditor: true }
+          )
+        )
+        return
+      }
+
+      await launchExternalEditor(fullPath, match)
+    } catch (error) {
+      this.emitError(error)
+    }
+  }
+
   /** This shouldn't be called directly. See `Dispatcher`. */
   public async _saveGitIgnore(
     repository: Repository,
