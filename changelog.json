@@ -13,7 +13,8 @@
       "[Fixed] Check run list scrolls when they exceed available space - #20831. Thanks @iamarjunsuresh!",
       "[Fixed] Only sanitize forbidden fs characters when creating repo - #20973",
       "[Fixed] Remove extra apostrophe from \"Generating commit details\" aria-label - #21369. Thanks @say25!",
-      "[Improved] Polish Changes tab Filter Options button and popover - #21412. Thanks @jpedroso!"
+      "[Improved] Polish Changes tab Filter Options button and popover - #21412. Thanks @jpedroso!",
+      "[Improved] Stash Menu Item disabled on dialogs - #21435. Thanks @jackfreem!"
     ],
     "3.5.4": [
       "[Fixed] Update Git LFS to 3.7.1 to address CVE-2025-26625",
