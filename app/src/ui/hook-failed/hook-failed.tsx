@@ -54,7 +54,7 @@ export class HookFailed extends React.Component<IHookFailedProps> {
           <OkCancelButtonGroup
             destructive={true}
             okButtonText={'Ignore and Continue'}
-            cancelButtonText={'Abort commit'}
+            cancelButtonText={'Abort'}
           />
         </DialogFooter>
       </Dialog>

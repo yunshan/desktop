@@ -4780,13 +4780,30 @@ export class AppStore extends TypedBaseStore<IAppState> {
       const gitStore = this.gitStoreCache.get(repository)
       await gitStore.performFailableOperation(
         async () => {
+          let aborted = false
           await pushRepo(
             repository,
             safeRemote,
             branch.name,
             branch.upstreamWithoutRemote,
             gitStore.tagsToPush,
-            options,
+            {
+              onHookFailure: (hookName, terminalOutput) =>
+                new Promise(resolve => {
+                  this._showPopup({
+                    type: PopupType.HookFailed,
+                    hookName,
+                    terminalOutput,
+                    resolve: resolution => {
+                      if (resolution === 'abort') {
+                        aborted = true
+                      }
+                      resolve(resolution)
+                    },
+                  })
+                }),
+              ...options,
+            },
             progress => {
               this.updatePushPullFetchProgress(repository, {
                 ...progress,
@@ -4794,7 +4811,12 @@ export class AppStore extends TypedBaseStore<IAppState> {
                 value: pushWeight * progress.value,
               })
             }
-          )
+          ).catch(err => (aborted ? undefined : Promise.reject(err)))
+
+          if (aborted) {
+            return
+          }
+
           gitStore.clearTagsToPush()
 
           await gitStore.fetchRemotes([safeRemote], false, fetchProgress => {

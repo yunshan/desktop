@@ -1,15 +1,19 @@
 import { spawn } from 'child_process'
-import { randomBytes } from 'crypto'
-import { createWriteStream } from 'fs'
-import { basename, join, resolve } from 'path'
+import { basename, resolve } from 'path'
 import { ProcessProxyConnection as Connection } from 'process-proxy'
-import { pipeline } from 'stream/promises'
 import type { HookProgress, TerminalOutput } from '../git'
 import { resolveGitBinary } from 'dugite'
 import { ShellEnvResult } from './get-shell-env'
 import { shellFriendlyNames } from './config'
 
-const hooksUsingStdin = ['post-rewrite']
+const hooksUsingStdin = [
+  'post-rewrite',
+  'pre-receive',
+  'post-receive',
+  'reference-transaction',
+  'pre-push',
+  'proc-receive', // TODO: Investigate whether this needs to be two-way or if --stdin is enough
+]
 const ignoredOnFailureHooks = [
   'post-applypatch',
   'post-commit',
@@ -91,13 +95,7 @@ export const createHooksProxy = (
       )
     )
 
-    // tmpdir is deleted when the Git call completes, so we can leave the file
-    const stdinFilePath = join(tmpDir, `in-${randomBytes(8).toString('hex')}`)
     const hasStdin = hooksUsingStdin.includes(hookName)
-
-    if (hasStdin) {
-      await pipeline(conn.stdin, createWriteStream(stdinFilePath))
-    }
 
     if (abortController.signal.aborted) {
       debug(`${hookName}: aborted before execution`)
@@ -113,7 +111,7 @@ export const createHooksProxy = (
       // pre-auto-gc hook configured themselves, so we tell Git to ignore
       // missing hooks here.
       ...(hookName === 'pre-auto-gc' ? ['--ignore-missing'] : []),
-      ...(hasStdin ? ['--to-stdin', stdinFilePath] : []),
+      ...(hasStdin ? ['--to-stdin', '/dev/stdin'] : []),
       '--',
       ...proxyArgs.slice(1),
     ]
@@ -160,6 +158,7 @@ export const createHooksProxy = (
       // https://github.com/git/git/blob/4cf919bd7b946477798af5414a371b23fd68bf93/hook.c#L73C6-L73C22
       child.stderr.pipe(conn.stderr, { end: false }).on('error', reject)
       child.stderr.on('data', data => terminalOutput.push(data))
+      conn.stdin.pipe(child.stdin).on('error', reject)
     })
 
     const elapsedSeconds = (Date.now() - startTime) / 1000
