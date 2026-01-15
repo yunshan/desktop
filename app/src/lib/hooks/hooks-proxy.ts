@@ -6,14 +6,6 @@ import { resolveGitBinary } from 'dugite'
 import { ShellEnvResult } from './get-shell-env'
 import { shellFriendlyNames } from './config'
 
-const hooksUsingStdin = [
-  'post-rewrite',
-  'pre-receive',
-  'post-receive',
-  'reference-transaction',
-  'pre-push',
-  'proc-receive',
-]
 const ignoredOnFailureHooks = [
   'post-applypatch',
   'post-commit',
@@ -67,7 +59,6 @@ const exitWithError = (conn: Connection, msg: string, exitCode = 1) =>
   exitWithMessage(conn, msg, exitCode)
 
 export const createHooksProxy = (
-  tmpDir: string,
   getShellEnv: (cwd: string) => Promise<ShellEnvResult>,
   onHookProgress?: (progress: HookProgress) => void,
   onHookFailure?: (
@@ -80,6 +71,7 @@ export const createHooksProxy = (
     const proxyArgs = await conn.getArgs()
     const proxyEnv = await conn.getEnv()
     const proxyCwd = await conn.getCwd()
+    const hasStdin = await conn.isStdinConnected()
 
     const hookName = basename(proxyArgs[0], __WIN32__ ? '.exe' : undefined)
 
@@ -95,8 +87,6 @@ export const createHooksProxy = (
       )
     )
 
-    const hasStdin = hooksUsingStdin.includes(hookName)
-
     if (abortController.signal.aborted) {
       debug(`${hookName}: aborted before execution`)
       await exitWithError(conn, `hook ${hookName} aborted`)
@@ -111,7 +101,7 @@ export const createHooksProxy = (
       // pre-auto-gc hook configured themselves, so we tell Git to ignore
       // missing hooks here.
       ...(hookName === 'pre-auto-gc' ? ['--ignore-missing'] : []),
-      ...(hasStdin ? ['--to-stdin', '/dev/stdin'] : []),
+      ...(hasStdin ? ['--to-stdin=/dev/stdin'] : []),
       '--',
       ...proxyArgs.slice(1),
     ]
