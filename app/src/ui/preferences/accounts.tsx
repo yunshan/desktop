@@ -68,7 +68,7 @@ export class Accounts extends React.Component<IAccountsProps, {}> {
           this.renderSignIn(SignInType.Enterprise)
         ) : (
           <Button onClick={this.props.onEnterpriseSignIn}>
-            Add GitHub Enteprise account
+            Add GitHub Enterprise account
           </Button>
         )}
       </>
