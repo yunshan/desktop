@@ -87,15 +87,7 @@ export async function push(
 
   let opts: IGitStringExecutionOptions = {
     env: await envForRemoteOperation(remote.url),
-    interceptHooks: [
-      'pre-receive',
-      'update',
-      'post-receive',
-      'post-update',
-      'push-to-checkout',
-      'pre-push',
-      'proc-receive',
-    ],
+    interceptHooks: ['pre-push'],
     onHookProgress: options?.onHookProgress,
     onHookFailure: options?.onHookFailure,
     onTerminalOutputAvailable: options?.onTerminalOutputAvailable,
