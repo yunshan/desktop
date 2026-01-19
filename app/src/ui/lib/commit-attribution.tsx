@@ -1,22 +1,11 @@
-import { Commit } from '../../models/commit'
 import * as React from 'react'
-import { GitHubRepository } from '../../models/github-repository'
-import { getAvatarUsersForCommit, IAvatarUser } from '../../models/avatar'
+import { IAvatarUser } from '../../models/avatar'
 
 interface ICommitAttributionProps {
   /**
-   * The commit or commits from where to extract the author, committer
-   * and co-authors from.
+   * The authors attributable to this commit
    */
-  readonly commits: ReadonlyArray<Commit>
-
-  /**
-   * The GitHub hosted repository that the given commit is
-   * associated with or null if repository is local or
-   * not associated with a GitHub account. Used to determine
-   * whether a commit is a special GitHub web flow user.
-   */
-  readonly gitHubRepository: GitHubRepository | null
+  readonly avatarUsers: ReadonlyArray<IAvatarUser>
 }
 
 /**
@@ -51,18 +40,9 @@ export class CommitAttribution extends React.Component<
   }
 
   public render() {
-    const { commits, gitHubRepository } = this.props
-
-    const allAuthors = commits.flatMap(x =>
-      getAvatarUsersForCommit(gitHubRepository, x)
-    )
-    const uniqueAuthors = new Map<string, IAvatarUser>(
-      allAuthors.map(a => [a.name + a.email, a])
-    )
-
     return (
       <span className="commit-attribution-component">
-        {this.renderAuthors(Array.from(uniqueAuthors.values()))}
+        {this.renderAuthors(this.props.avatarUsers)}
       </span>
     )
   }
