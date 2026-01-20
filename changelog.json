@@ -1,5 +1,12 @@
 {
   "releases": {
+    "3.5.5-beta2": [
+      "[New] Enable one-time opening of a repository in an alternate editor` - #21436. Thanks @jackfreem!",
+      "[Fixed] Git output containing multibyte characters is handled correctly avoiding unexpected crashes - #21469",
+      "[Fixed] Enterprise is spelled correctly in Account preferences - #21454",
+      "[Fixed] Commits made by Copilot now use the Copilot avatar - #21475",
+      "[Improved] Updated \"push needs pull\" warning message for clarity - #21423. Thanks @movahhedi!"
+    ],
     "3.5.5-beta1": [
       "[New] Run hooks in user's shell environment and allow bypassing commit hooks - #21319",
       "[Added] \"View Branch on GitHub\" option on branch list context menu - #21071. Thanks @DylanDevelops!",
