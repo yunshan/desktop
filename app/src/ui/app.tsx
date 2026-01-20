@@ -188,7 +188,6 @@ import { webUtils } from 'electron'
 import { showTestUI } from './lib/test-ui-components/test-ui-components'
 import { ConfirmCommitFilteredChanges } from './changes/confirm-commit-filtered-changes-dialog'
 import { AboutTestDialog } from './about/about-test-dialog'
-import { enableMultipleEnterpriseAccounts } from '../lib/feature-flag'
 import {
   ISecretScanResult,
   PushProtectionErrorDialog,
@@ -271,17 +270,6 @@ export class App extends React.Component<IAppProps, IAppState> {
   private getOnPopupDismissedFn = memoizeOne((popupId: string) => {
     return () => this.onPopupDismissed(popupId)
   })
-
-  /**
-   * Helper method to mimic the behavior prior to us supporting multiple
-   * enterprise accounts. Takes a list of accounts and returns the first
-   * dotcom account (if any) followed by the first enterprise account (if any)
-   */
-  private oneAccountPerKind = memoizeOne((accounts: ReadonlyArray<Account>) =>
-    [accounts.find(isDotComAccount), accounts.find(isEnterpriseAccount)].filter(
-      x => x !== undefined
-    )
-  )
 
   public constructor(props: IAppProps) {
     super(props)
@@ -3414,9 +3402,7 @@ export class App extends React.Component<IAppProps, IAppState> {
   }
 
   private renderRepository() {
-    const accounts = enableMultipleEnterpriseAccounts()
-      ? this.state.accounts
-      : this.oneAccountPerKind(this.state.accounts)
+    const { accounts } = this.state
 
     if (this.inNoRepositoriesViewState()) {
       return (
