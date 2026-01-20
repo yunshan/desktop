@@ -74,16 +74,6 @@ export function enableUpdateFromEmulatedX64ToARM64(): boolean {
   return enableBetaFeatures()
 }
 
-/** Should we allow resetting to a previous commit? */
-export function enableResetToCommit(): boolean {
-  return true
-}
-
-/** Should we allow checking out a single commit? */
-export function enableCheckoutCommit(): boolean {
-  return true
-}
-
 /** Should we show previous tags as suggestions? */
 export function enablePreviousTagSuggestions(): boolean {
   return enableBetaFeatures()
