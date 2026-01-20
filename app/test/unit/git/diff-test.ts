@@ -35,7 +35,6 @@ import { getStatusOrThrow } from '../../helpers/status'
 
 import { GitError as DugiteError, exec } from 'dugite'
 import { makeCommit, switchTo } from '../../helpers/repository-scaffolding'
-import { writeFile } from 'fs/promises'
 import { join } from 'node:path'
 
 async function getTextDiff(
@@ -347,10 +346,7 @@ describe('git/diff', () => {
     it('handles unborn repository with mixed state', async t => {
       const repo = await setupEmptyRepository(t)
 
-      await writeFile(
-        path.join(repo.path, 'foo'),
-        'WRITING THE FIRST LINE\n'
-      )
+      await writeFile(path.join(repo.path, 'foo'), 'WRITING THE FIRST LINE\n')
 
       await exec(['add', 'foo'], repo.path)
 

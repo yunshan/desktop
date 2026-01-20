@@ -37,10 +37,7 @@ async function prepareDiff(
   )
   const contentFolderPath = await mkdtemp(contentFolderPathPrefix)
 
-  await writeFile(
-    path.join(contentFolderPath, 'original'),
-    originalContents
-  )
+  await writeFile(path.join(contentFolderPath, 'original'), originalContents)
   await writeFile(path.join(contentFolderPath, 'changed'), modifiedContents)
 
   // Generate diff with 3 lines of context

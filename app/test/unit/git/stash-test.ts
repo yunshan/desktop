@@ -69,10 +69,7 @@ describe('git/stash', () => {
 
     it('creates a stash entry when repo is not unborn or in any kind of conflict or rebase state', async t => {
       const repository = await setup(t)
-      await appendFile(
-        join(repository.path, 'README.md'),
-        'just testing stuff'
-      )
+      await appendFile(join(repository.path, 'README.md'), 'just testing stuff')
 
       await createDesktopStashEntry(repository, 'master', [])
 

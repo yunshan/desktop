@@ -221,10 +221,7 @@ describe('git/status', () => {
         const testRepoPath = await setupFixtureRepository(t, 'test-repo')
         const repository = new Repository(testRepoPath, -1, null, false)
 
-        await writeFile(
-          path.join(repository.path, 'README.md'),
-          'Hi world\n'
-        )
+        await writeFile(path.join(repository.path, 'README.md'), 'Hi world\n')
 
         const status = await getStatusOrThrow(repository)
         const files = status.workingDirectory.files
@@ -339,10 +336,7 @@ describe('git/status', () => {
         }
 
         // Modify README.md file. Now the submodule has modified changes.
-        await writeFile(
-          path.join(submodulePath, 'README.md'),
-          'hello world\n'
-        )
+        await writeFile(path.join(submodulePath, 'README.md'), 'hello world\n')
         await checkSubmoduleChanges({
           modifiedChanges: true,
           untrackedChanges: false,

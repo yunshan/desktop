@@ -559,10 +559,7 @@ describe('git/commit', () => {
           trackedFiles,
           manualResolutions
         )
-        assert.equal(
-          await pathExists(path.join(repository.path, 'bar')),
-          true
-        )
+        assert.equal(await pathExists(path.join(repository.path, 'bar')), true)
         const newStatus = await getStatusOrThrow(repository)
         assert.equal(sha.length, 7)
         assert.equal(newStatus.workingDirectory.files.length, 1)
@@ -583,10 +580,7 @@ describe('git/commit', () => {
           trackedFiles,
           manualResolutions
         )
-        assert.equal(
-          await pathExists(path.join(repository.path, 'bar')),
-          false
-        )
+        assert.equal(await pathExists(path.join(repository.path, 'bar')), false)
         const newStatus = await getStatusOrThrow(repository)
         assert.equal(sha.length, 7)
         assert.equal(newStatus.workingDirectory.files.length, 1)
