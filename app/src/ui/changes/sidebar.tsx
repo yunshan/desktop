@@ -1,7 +1,6 @@
 import * as Path from 'path'
 import * as React from 'react'
 
-import { ChangesList } from './changes-list'
 import { DiffSelectionType } from '../../models/diff'
 import {
   IChangesState,
@@ -32,7 +31,6 @@ import { isConflictedFile, hasUnresolvedConflicts } from '../../lib/status'
 import { getAccountForRepository } from '../../lib/get-account-for-repository'
 import { IAheadBehind } from '../../models/branch'
 import { Emoji } from '../../lib/emoji'
-import { enableFilteredChangesList } from '../../lib/feature-flag'
 import { FilterChangesList } from './filter-changes-list'
 import { HookProgress } from '../../lib/git'
 
@@ -121,7 +119,7 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
   private autocompletionProviders: ReadonlyArray<
     IAutocompletionProvider<any>
   > | null = null
-  private changesListRef = React.createRef<ChangesList>()
+  private changesListRef = React.createRef<FilterChangesList>()
 
   public constructor(props: IChangesSidebarProps) {
     super(props)
@@ -233,13 +231,6 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
       this.props.repository,
       file,
       include
-    )
-  }
-
-  private onSelectAll = (selectAll: boolean) => {
-    this.props.dispatcher.changeIncludeAllFiles(
-      this.props.repository,
-      selectAll
     )
   }
 
@@ -420,13 +411,9 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
       this.props.repository
     )
 
-    const ChangesListComponent = enableFilteredChangesList()
-      ? FilterChangesList
-      : ChangesList
-
     return (
       <div className="panel" role="tabpanel" aria-labelledby="changes-tab">
-        <ChangesListComponent
+        <FilterChangesList
           ref={this.changesListRef}
           dispatcher={this.props.dispatcher}
           repository={this.props.repository}
@@ -439,7 +426,6 @@ export class ChangesSidebar extends React.Component<IChangesSidebarProps, {}> {
           onFileSelectionChanged={this.onFileSelectionChanged}
           onCreateCommit={this.onCreateCommit}
           onIncludeChanged={this.onIncludeChanged}
-          onSelectAll={this.onSelectAll}
           onDiscardChanges={this.onDiscardChanges}
           askForConfirmationOnDiscardChanges={
             this.props.askForConfirmationOnDiscardChanges
