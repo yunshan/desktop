@@ -1,11 +1,4 @@
-import {
-  git,
-  HookCallbackOptions,
-  HookProgress,
-  IGitStringExecutionOptions,
-  TerminalOutput,
-  TerminalOutputCallback,
-} from './core'
+import { git, HookCallbackOptions, IGitStringExecutionOptions } from './core'
 import { Repository } from '../../models/repository'
 import { IPushProgress } from '../../models/progress'
 import { PushProgressParser, executionOptionsWithProgress } from '../progress'

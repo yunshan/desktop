@@ -1,7 +1,7 @@
 import { spawn } from 'child_process'
 import { basename, resolve } from 'path'
 import { ProcessProxyConnection as Connection } from 'process-proxy'
-import type { HookCallbackOptions, HookProgress, TerminalOutput } from '../git'
+import type { HookCallbackOptions } from '../git'
 import { resolveGitBinary } from 'dugite'
 import { ShellEnvResult } from './get-shell-env'
 import { shellFriendlyNames } from './config'

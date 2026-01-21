@@ -1,11 +1,4 @@
-import {
-  git,
-  HookCallbackOptions,
-  HookProgress,
-  parseCommitSHA,
-  TerminalOutput,
-  TerminalOutputCallback,
-} from './core'
+import { git, HookCallbackOptions, parseCommitSHA } from './core'
 import { stageFiles } from './update-index'
 import { Repository } from '../../models/repository'
 import { WorkingDirectoryFileChange } from '../../models/status'
