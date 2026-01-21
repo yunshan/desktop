@@ -188,6 +188,8 @@ import {
   getRemoteURL,
   getGlobalConfigPath,
   getFilesDiffText,
+  TerminalOutput,
+  HookProgress,
 } from '../git'
 import {
   installGlobalLFSFilters,
@@ -3333,34 +3335,15 @@ export class AppStore extends TypedBaseStore<IAppState> {
           let aborted = false
           return createCommit(repository, message, selectedFiles, {
             amend: context.amend,
-            onHookProgress: hookProgress => {
-              this.repositoryStateCache.update(repository, state => ({
-                ...state,
-                hookProgress,
-              }))
-              this.emitUpdate()
-            },
-            onHookFailure: (hookName, terminalOutput) =>
-              new Promise(resolve => {
-                this._showPopup({
-                  type: PopupType.HookFailed,
-                  hookName,
-                  terminalOutput,
-                  resolve: resolution => {
-                    if (resolution === 'abort') {
-                      aborted = true
-                    }
-                    resolve(resolution)
-                  },
-                })
-              }),
+            onHookProgress: this.onHookProgress(repository),
+            onHookFailure: this.onHookFailure(() => (aborted = true)),
             onTerminalOutputAvailable: subscribeToCommitOutput => {
               this.repositoryStateCache.update(repository, state => ({
                 ...state,
                 subscribeToCommitOutput,
               }))
             },
-            skipCommitHooks: state.skipCommitHooks,
+            noVerify: state.skipCommitHooks,
           }).catch(err => (aborted ? undefined : Promise.reject(err)))
         },
         { gitContext: { kind: 'commit' }, repository }
@@ -4788,20 +4771,7 @@ export class AppStore extends TypedBaseStore<IAppState> {
             branch.upstreamWithoutRemote,
             gitStore.tagsToPush,
             {
-              onHookFailure: (hookName, terminalOutput) =>
-                new Promise(resolve => {
-                  this._showPopup({
-                    type: PopupType.HookFailed,
-                    hookName,
-                    terminalOutput,
-                    resolve: resolution => {
-                      if (resolution === 'abort') {
-                        aborted = true
-                      }
-                      resolve(resolution)
-                    },
-                  })
-                }),
+              onHookFailure: this.onHookFailure(() => (aborted = true)),
               ...options,
             },
             progress => {
@@ -5713,6 +5683,30 @@ export class AppStore extends TypedBaseStore<IAppState> {
     }
 
     return Promise.resolve()
+  }
+
+  private onHookProgress = (respository: Repository) => {
+    return (hookProgress: HookProgress) => {
+      this.repositoryStateCache.update(respository, () => ({ hookProgress }))
+      this.emitUpdate()
+    }
+  }
+
+  private onHookFailure = (onAborted: () => void) => {
+    return (hookName: string, terminalOutput: TerminalOutput) =>
+      new Promise<'abort' | 'ignore'>(resolve => {
+        this._showPopup({
+          type: PopupType.HookFailed,
+          hookName,
+          terminalOutput,
+          resolve: resolution => {
+            if (resolution === 'abort') {
+              onAborted()
+            }
+            resolve(resolution)
+          },
+        })
+      })
   }
 
   public async _mergeBranch(
