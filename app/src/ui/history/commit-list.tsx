@@ -9,10 +9,6 @@ import { DragData, DragType } from '../../models/drag-drop'
 import classNames from 'classnames'
 import memoizeOne from 'memoize-one'
 import { IMenuItem, showContextualMenu } from '../../lib/menu-item'
-import {
-  enableCheckoutCommit,
-  enableResetToCommit,
-} from '../../lib/feature-flag'
 import { getDotComAPIEndpoint } from '../../lib/api'
 import { clipboard } from 'electron'
 import { RowIndexPath } from '../lib/list/list-row-index-path'
@@ -770,27 +766,23 @@ export class CommitList extends React.Component<
       })
     }
 
-    if (enableResetToCommit()) {
-      items.push({
-        label: __DARWIN__ ? 'Reset to Commit…' : 'Reset to commit…',
-        action: () => {
-          if (this.props.onResetToCommit) {
-            this.props.onResetToCommit(commit)
-          }
-        },
-        enabled: canBeResetTo && this.props.onResetToCommit !== undefined,
-      })
-    }
+    items.push({
+      label: __DARWIN__ ? 'Reset to Commit…' : 'Reset to commit…',
+      action: () => {
+        if (this.props.onResetToCommit) {
+          this.props.onResetToCommit(commit)
+        }
+      },
+      enabled: canBeResetTo && this.props.onResetToCommit !== undefined,
+    })
 
-    if (enableCheckoutCommit()) {
-      items.push({
-        label: __DARWIN__ ? 'Checkout Commit' : 'Checkout commit',
-        action: () => {
-          this.props.onCheckoutCommit?.(commit)
-        },
-        enabled: canBeCheckedOut && this.props.onCheckoutCommit !== undefined,
-      })
-    }
+    items.push({
+      label: __DARWIN__ ? 'Checkout Commit' : 'Checkout commit',
+      action: () => {
+        this.props.onCheckoutCommit?.(commit)
+      },
+      enabled: canBeCheckedOut && this.props.onCheckoutCommit !== undefined,
+    })
 
     items.push({
       label: __DARWIN__ ? 'Reorder Commit' : 'Reorder commit',
