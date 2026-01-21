@@ -1,7 +1,7 @@
 import { spawn } from 'child_process'
 import { basename, resolve } from 'path'
 import { ProcessProxyConnection as Connection } from 'process-proxy'
-import type { HookProgress, TerminalOutput } from '../git'
+import type { HookCallbackOptions, HookProgress, TerminalOutput } from '../git'
 import { resolveGitBinary } from 'dugite'
 import { ShellEnvResult } from './get-shell-env'
 import { shellFriendlyNames } from './config'
@@ -61,11 +61,8 @@ const exitWithError = (conn: Connection, msg: string, exitCode = 1) =>
 
 export const createHooksProxy = (
   getShellEnv: (cwd: string) => Promise<ShellEnvResult>,
-  onHookProgress?: (progress: HookProgress) => void,
-  onHookFailure?: (
-    hookName: string,
-    terminalOutput: TerminalOutput
-  ) => Promise<'abort' | 'ignore'>
+  onHookProgress?: HookCallbackOptions['onHookProgress'],
+  onHookFailure?: HookCallbackOptions['onHookFailure']
 ) => {
   return async (conn: Connection) => {
     const startTime = Date.now()

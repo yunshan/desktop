@@ -1,5 +1,6 @@
 import {
   git,
+  HookCallbackOptions,
   HookProgress,
   IGitStringExecutionOptions,
   TerminalOutput,
@@ -24,14 +25,8 @@ export type PushOptions = {
   /** A branch to push instead of the current branch */
   readonly branch?: Branch
 
-  readonly onHookProgress?: (progress: HookProgress) => void
-  readonly onHookFailure?: (
-    hookName: string,
-    terminalOutput: TerminalOutput
-  ) => Promise<'abort' | 'ignore'>
-  readonly onTerminalOutputAvailable?: TerminalOutputCallback
   readonly noVerify?: boolean
-}
+} & HookCallbackOptions
 
 /**
  * Push from the remote to the branch, optionally setting the upstream.

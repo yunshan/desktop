@@ -56,12 +56,23 @@ export type HookProgress =
         }
     )
 
+export type HookCallbackOptions = {
+  readonly onHookProgress?: (progress: HookProgress) => void
+  readonly onHookFailure?: (
+    hookName: string,
+    terminalOutput: TerminalOutput
+  ) => Promise<'abort' | 'ignore'>
+  readonly onTerminalOutputAvailable?: TerminalOutputCallback
+}
+
 /**
  * An extension of the execution options in dugite that
  * allows us to piggy-back our own configuration options in the
  * same object.
  */
-export interface IGitExecutionOptions extends DugiteExecutionOptions {
+export interface IGitExecutionOptions
+  extends HookCallbackOptions,
+    DugiteExecutionOptions {
   /**
    * The exit codes which indicate success to the
    * caller. Unexpected exit codes will be logged and an
@@ -85,13 +96,6 @@ export interface IGitExecutionOptions extends DugiteExecutionOptions {
   readonly isBackgroundTask?: boolean
 
   readonly interceptHooks?: string[]
-  readonly onHookProgress?: (progress: HookProgress) => void
-  readonly onHookFailure?: (
-    hookName: string,
-    terminalOutput: TerminalOutput
-  ) => Promise<'abort' | 'ignore'>
-
-  readonly onTerminalOutputAvailable?: TerminalOutputCallback
 }
 
 /**

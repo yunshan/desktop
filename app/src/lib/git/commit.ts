@@ -1,5 +1,6 @@
 import {
   git,
+  HookCallbackOptions,
   HookProgress,
   parseCommitSHA,
   TerminalOutput,
@@ -24,14 +25,8 @@ export async function createCommit(
   files: ReadonlyArray<WorkingDirectoryFileChange>,
   options?: {
     amend?: boolean
-    onHookProgress?: (progress: HookProgress) => void
-    onHookFailure?: (
-      hookName: string,
-      terminalOutput: TerminalOutput
-    ) => Promise<'abort' | 'ignore'>
-    onTerminalOutputAvailable?: TerminalOutputCallback
-    skipCommitHooks?: boolean
-  }
+    noVerify?: boolean
+  } & HookCallbackOptions
 ): Promise<string> {
   // Clear the staging area, our diffs reflect the difference between the
   // working directory and the last commit (if any) so our commits should
@@ -46,7 +41,7 @@ export async function createCommit(
     args.push('--amend')
   }
 
-  if (options?.skipCommitHooks) {
+  if (options?.noVerify) {
     args.push('--no-verify')
   }
 
