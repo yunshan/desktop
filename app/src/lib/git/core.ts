@@ -272,7 +272,9 @@ export async function git(
 
     const capacity = 256 * 1024
     const push = (chunk: Buffer | string) => {
-      terminalChunks.push(coerceToString(chunk))
+      chunk = coerceToString(chunk)
+
+      terminalChunks.push(chunk)
       terminalOutputLength += chunk.length
 
       while (terminalOutputLength > capacity) {

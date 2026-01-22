@@ -1,5 +1,28 @@
 {
   "releases": {
+    "3.5.5-beta2": [
+      "[New] Enable one-time opening of a repository in an alternate editor` - #21436. Thanks @jackfreem!",
+      "[Fixed] Git output containing multibyte characters is handled correctly avoiding unexpected crashes - #21469",
+      "[Fixed] Enterprise is spelled correctly in Account preferences - #21454",
+      "[Fixed] Commits made by Copilot now use the Copilot avatar - #21475",
+      "[Improved] Updated \"push needs pull\" warning message for clarity - #21423. Thanks @movahhedi!"
+    ],
+    "3.5.5-beta1": [
+      "[New] Run hooks in user's shell environment and allow bypassing commit hooks - #21319",
+      "[Added] \"View Branch on GitHub\" option on branch list context menu - #21071. Thanks @DylanDevelops!",
+      "[Fixed] Resize without observing - #21311 #20760",
+      "[Fixed] Enter key now creates new branches from the branch filter field - #7734. Thanks @jackfreem!",
+      "[Fixed] Fix the inability to move directories when creating a repository in a non-Git folder - #20991. Thanks @DylanDevelops!",
+      "[Fixed] Pull from paginated local vs head-n based on last commit - #20882. Thanks @ashdawngary!",
+      "[Fixed] Repository write access warnings update immediately when switching accounts - #21329",
+      "[Fixed] Improve branch renaming to handle case-only changes - #21320",
+      "[Fixed] Refresh repository after commit failure - #21229",
+      "[Fixed] Check run list scrolls when they exceed available space - #20831. Thanks @iamarjunsuresh!",
+      "[Fixed] Only sanitize forbidden fs characters when creating repo - #20973",
+      "[Fixed] Remove extra apostrophe from \"Generating commit details\" aria-label - #21369. Thanks @say25!",
+      "[Improved] Polish Changes tab Filter Options button and popover - #21412. Thanks @jpedroso!",
+      "[Improved] Stash Menu Item disabled on dialogs - #21435. Thanks @jackfreem!"
+    ],
     "3.5.4": [
       "[Fixed] Update Git LFS to 3.7.1 to address CVE-2025-26625",
       "[Fixed] Check run status icons in the re-run checks dialog have a status tooltip that is accessible by screenreaders - #21191",
