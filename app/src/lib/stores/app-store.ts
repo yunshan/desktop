@@ -5749,7 +5749,16 @@ export class AppStore extends TypedBaseStore<IAppState> {
       }
     }
 
-    const mergeResult = await gitStore.merge(sourceBranch, isSquash)
+    let aborted = false
+    const mergeResult = await gitStore.merge(sourceBranch, {
+      squash: isSquash,
+      onHookFailure: this.onHookFailure(() => (aborted = true)),
+    })
+
+    if (aborted) {
+      return this._refreshRepository(repository)
+    }
+
     const { tip } = gitStore
 
     if (mergeResult === MergeResult.Success && tip.kind === TipState.Valid) {
