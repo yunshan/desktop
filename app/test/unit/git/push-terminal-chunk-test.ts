@@ -252,7 +252,11 @@ describe('pushTerminalChunk', () => {
       const capacity = 1000
 
       pushTerminalChunk(chunks, capacity, 'Enumerating objects: 5, done.\n')
-      pushTerminalChunk(chunks, capacity, 'Counting objects: 100% (5/5), done.\n')
+      pushTerminalChunk(
+        chunks,
+        capacity,
+        'Counting objects: 100% (5/5), done.\n'
+      )
       pushTerminalChunk(
         chunks,
         capacity,
