@@ -12,7 +12,6 @@ import { PullProgressParser, executionOptionsWithProgress } from '../progress'
 import { IRemote } from '../../models/remote'
 import { envForRemoteOperation } from './environment'
 import { getConfigValue } from './config'
-import { enableRecurseSubmodulesFlag } from '../feature-flag'
 
 /**
  * Pull from the specified remote.
@@ -53,8 +52,6 @@ export async function pull(
       'post-merge',
       'pre-rebase',
       'pre-commit',
-      'prepare-commit-msg',
-      'commit-msg',
       'post-rewrite',
     ],
   }
@@ -100,7 +97,7 @@ export async function pull(
     ...gitRebaseArguments(),
     'pull',
     ...(await getDefaultPullDivergentBranchArguments(repository)),
-    ...(enableRecurseSubmodulesFlag() ? ['--recurse-submodules'] : []),
+    '--recurse-submodules',
     ...(options?.progressCallback ? ['--progress'] : []),
     ...(options?.noVerify ? ['--no-verify'] : []),
     remote.name,
