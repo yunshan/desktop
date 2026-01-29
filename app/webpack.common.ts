@@ -90,6 +90,9 @@ export const renderer = merge({}, commonConfig, {
       })
     ),
   ],
+  resolve: {
+    aliasFields: [],
+  },
 })
 
 export const crash = merge({}, commonConfig, {
