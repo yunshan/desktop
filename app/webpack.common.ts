@@ -91,6 +91,7 @@ export const renderer = merge({}, commonConfig, {
     ),
   ],
   resolve: {
+    // Prevent the renderer from using browser-specific versions of modules
     aliasFields: [],
   },
 })
